@@ -1,0 +1,50 @@
+/* Personnalisation du conteneur général */
+#calendar {
+    font-family: 'Open Sans', sans-serif;
+
+}
+
+
+/*  Personnalisation des événements */
+.fc-event {
+    background: #23b7e5;
+    border: none;
+    text-align: center;
+    color: #1e1d1d;
+    font-size: 12px;
+    transition: transform 0.2s, box-shadow 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%; /* S'assure que l'élément prend toute la hauteur disponible */
+}
+
+
+
+
+/*  Personnalisation de l'en-tête (titre et boutons) */
+.fc-toolbar {
+
+    font-size: 10px;
+
+}
+
+/*  Effet lors de la sélection d’un créneau */
+.fc-highlight {
+    background: rgba(255, 87, 51, 0.5);
+}
+
+
+.fc .fc-timegrid-slot-label {
+    vertical-align: middle;
+    color: #6c6b6b;
+    font-size: 12px;
+    padding: 5px;
+}
+
+.fc .fc-col-header-cell-cushion {
+    display: inline-block;
+    padding: 2px 4px;
+    color: #6c6b6b;
+    font-size: 12px;
+}

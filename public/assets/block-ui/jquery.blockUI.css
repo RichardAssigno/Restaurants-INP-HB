@@ -1,0 +1,51 @@
+.blockElement,
+.blockMsg,
+.blockUI {
+    background-color: #eff2f7 !important;
+    padding: 5px 10px !important;
+    border: none !important;
+    border-radius: .3rem !important;
+    width: auto !important;
+    top: 50% !important;
+    left: 50% !important;
+    -webkit-transform: translate(-50%, -50%) !important;
+    transform: translate(-50%, -50%) !important
+}
+
+.blockElement h1,
+.blockMsg h1,
+.blockUI h1 {
+    font-size: 1rem !important;
+    margin-bottom: 0 !important
+}
+
+.blockMsg,blockElement{
+    z-index: 10001 !important;
+    background-color: transparent !important;
+    color: #151414 !important;
+}
+.blockUI.blockOverlay {
+    width: 100% !important
+}
+
+/* Ajout d'un effet de chargement */
+/* Ajout d'un effet de chargement */
+.blockMsg:before {
+    content: "";
+    display: block;
+    width: 30px;
+    height: 30px;
+    margin: 0 auto 10px;
+    border: 1px solid #3f3e3e;
+    border-top: 1px solid transparent;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+
+
+/* Animation de rotation */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}

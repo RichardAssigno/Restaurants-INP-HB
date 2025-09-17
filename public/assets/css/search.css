@@ -1,0 +1,13 @@
+.search-resultat{
+    padding: 7px 7px ;
+    margin-bottom: 4px;
+    border: none;
+    background-color: #23b7e51c;
+    color: #0b1115 ;
+    border-radius: 0px ;
+    transition: background-color 0.3s ease ;
+}
+.search-url{
+    color: inherit !important;
+    text-decoration: none !important;
+}
