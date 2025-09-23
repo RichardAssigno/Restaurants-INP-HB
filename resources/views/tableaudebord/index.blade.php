@@ -27,58 +27,63 @@
         <div class="content-wrapper">
 
             @include('layouts.content-heading',['head'=>'Accueil','content'=>'<a class="text-decoration-none" href="">Tableau de bord</a>','localize'=>'dashboard.WELCOME'])
-
+            @if(session('error'))
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    {{ session('error') }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            @endif
             <div class="row">
-                <div class="col-xl-3">
+                <div class="col-md-3">
                     <!-- START card-->
                     <div class="card border-0">
                         <div class="row row-flush">
                             <div class="col-4 bg-info text-center d-flex align-items-center justify-content-center rounded-left"><em class="fa fa-coffee fa-2x"></em></div>
                             <div class="col-8">
                                 <div class="card-body text-center">
-                                    <h4 class="mt-0">{{$petitdejeuner->totalFacturations}} {{$petitdejeuner->totalFacturations > 1 ? "Couverts" : "Couvert"}}</h4>
+                                    <h4 class="mt-0">{{$petitdejeuner->totalFacturations ?? 0}} {{$petitdejeuner->totalFacturations ?? 0 > 1 ? "Couverts" : "Couvert"}}</h4>
                                     <p class="mb-0 text-muted">{{$date . " - " . "PET-DEJ"}}</p>
                                 </div>
                             </div>
                         </div>
                     </div><!-- END card-->
                 </div>
-                <div class="col-xl-3">
+                <div class="col-md-3">
                     <!-- START card-->
                     <div class="card border-0">
                         <div class="row row-flush">
                             <div class="col-4 bg-danger text-center d-flex align-items-center justify-content-center rounded-left"><em class="fa fa-concierge-bell fa-2x"></em></div>
                             <div class="col-8">
                                 <div class="card-body text-center">
-                                    <h4 class="mt-0">{{$dejeuner->totalFacturations}} {{$dejeuner->totalFacturations > 1 ? "Couverts" : "Couvert"}}</h4>
-                                    <p class="mb-0 text-muted">{{$date . " - " . mb_strtoupper($dejeuner->libelle)}}</p>
+                                    <h4 class="mt-0">{{$dejeuner->totalFacturations ?? 0}} {{$dejeuner->totalFacturations ?? 0> 1 ? "Couverts" : "Couvert"}}</h4>
+                                    <p class="mb-0 text-muted">{{$date . " - " . mb_strtoupper($dejeuner->libelle ?? "")}}</p>
                                 </div>
                             </div>
                         </div>
                     </div><!-- END card-->
                 </div>
-                <div class="col-xl-3">
+                <div class="col-md-3">
                     <!-- START card-->
                     <div class="card border-0">
                         <div class="row row-flush">
                             <div class="col-4 bg-inverse text-center d-flex align-items-center justify-content-center rounded-left"><em class="fa fa-utensils fa-2x"></em></div>
                             <div class="col-8">
                                 <div class="card-body text-center">
-                                    <h4 class="mt-0">{{$diner->totalFacturations}} {{$diner->totalFacturations > 1 ? "Couverts" : "Couvert"}}</h4>
-                                    <p class="mb-0 text-muted">{{$date . " - " . mb_strtoupper($diner->libelle)}}</p>
+                                    <h4 class="mt-0">{{$diner->totalFacturations ?? 0}} {{$diner->totalFacturations ?? 0 > 1 ? "Couverts" : "Couvert"}}</h4>
+                                    <p class="mb-0 text-muted">{{$date . " - " . mb_strtoupper($diner->libelle ?? "")}}</p>
                                 </div>
                             </div>
                         </div>
                     </div><!-- END card-->
                 </div>
-                <div class="col-xl-3">
+                <div class="col-md-3">
                     <!-- START card-->
                     <div class="card border-0">
                         <div class="row row-flush">
                             <div class="col-4 bg-green text-center d-flex align-items-center justify-content-center rounded-left"><em class="fa fa-chart-bar fa-2x"></em></div>
                             <div class="col-8">
                                 <div class="card-body text-center">
-                                    <h4 class="mt-0">{{$petitdejeuner->totalFacturations + $dejeuner->totalFacturations + $diner->totalFacturations}}</h4>
+                                    <h4 class="mt-0">{{$petitdejeuner->totalFacturations ?? 0 + $dejeuner->totalFacturations ?? 0 + $diner->totalFacturations ?? 0}}</h4>
                                     <p class="mb-0 text-muted">{{$date . " - " . "TOTAL"}}</p>
                                 </div>
                             </div>

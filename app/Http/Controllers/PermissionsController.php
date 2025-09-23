@@ -12,8 +12,6 @@ class PermissionsController extends Controller
     public function index()
     {
 
-        dd(Permission::all());
-
         return view('utilisateurs.permissions.index', [
 
             "permissions" => Permission::query()->where("guard_name" , "=", "operateur")->orderBy("name", "asc")->get()

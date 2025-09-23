@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Facturation;
+use App\Models\Transaction;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -10,18 +11,18 @@ use Illuminate\Support\Facades\Validator;
 class TableaudebordController extends Controller
 {
 
-    public function index($mois = null){
+    public function index(){
 
-        $infosfacturationdujour = Facturation::getFacturationsParServiceDuJour(Carbon::today()->toDateString());
+        $infosfacturationdujour = Transaction::getFacturationsParServiceDuJour(Carbon::today()->toDateString());
 
         $petitdejeuner = $infosfacturationdujour->firstWhere('codeService', 'PD');
         $dejeuner = $infosfacturationdujour->firstWhere('codeService', 'D');
         $diner = $infosfacturationdujour->firstWhere('codeService', 'DR');
         $datepouraffichage = Carbon::today()->format('d.m.Y');
 
-        $mois = $mois ?? carbon::today()->format('m');
+        $mois = carbon::today()->format('m');
 
-        $facturationparmois = Facturation::statistiquesParJour($mois);
+        $facturationparmois = Transaction::statistiquesParJour($mois);
 
         $moisFrancais = [
             1 => 'Janvier', 2 => 'Février', 3 => 'Mars', 4 => 'Avril',
@@ -70,11 +71,11 @@ class TableaudebordController extends Controller
 
         $data = $validator->validate();
 
-        $facturationparmois = Facturation::statistiquesParJour($data["mois"]);
+        $transactionsparmois = Transaction::statistiquesParJour($data["mois"]);
 
         return response()->json([
             'success' => true,
-            'data' => $facturationparmois
+            'data' => $transactionsparmois
         ]);
 
     }

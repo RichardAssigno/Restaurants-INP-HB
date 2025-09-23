@@ -33,6 +33,12 @@
             @if(session()->has('returnMessage'))
                 {!! session('returnMessage') !!}
             @endif
+            @if(session('error'))
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    {{ session('error') }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            @endif
             {{--@can('Ajouter role')--}}
                 <div class="row">
             <div class="col-lg-12">
@@ -157,7 +163,7 @@
                                             <td class="libelleRole">{{ $cle->name }}</td>
                                             <td class="actif">
 
-                                                @if($cle->actif === 1)
+                                                @if($cle->actif == 1)
                                                     <button data-bs-toggle="tooltip" data-bs-placement="top" data-bs-original-title="Cliquer pour désactiver le compte" class="btn btn-outline-success btn-sm  btn-comptes-open" data-id="{{ $cle->idOperateur }}" data-name="{{ $cle->nom . ' ' .  $cle->prenoms}}"><i class="fas fa-lock-open"></i></button>
                                                 @else
                                                     <button data-bs-toggle="tooltip" data-bs-placement="top" data-bs-original-title="Cliquer pour activer le compte" class="btn btn-outline-danger btn-sm  btn-comptes-lock" data-id="{{ $cle->idOperateur }}" data-name="{{ $cle->nom . ' ' .  $cle->prenoms}}"><i class="fas fa-lock"></i></button>

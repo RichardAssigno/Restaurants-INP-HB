@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Compte;
 use App\Models\Operateur;
+use App\Models\TypeFacturation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -241,5 +243,7 @@ class ComptesController extends Controller
         return response()->json(['message' => 'Compte activé avec succès']);
 
     }
+
+
 
 }

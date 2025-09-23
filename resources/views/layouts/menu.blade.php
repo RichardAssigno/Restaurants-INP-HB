@@ -56,8 +56,15 @@
                     </li>
                 @endcanany
 
-                @can("Facturations.Voir facturation")
-                    <li class=" "><a href="{{--{{route("listeEnseignants.index")}}--}}" title="Facturation">
+                <li class=" "><a href="{{route("compterestau.index")}}" title="Compte Restaurant" >
+                        <em class="icon-speedometer"></em><span
+                            data-localize="sidebar.nav.COMPTE">Compte Restaurant</span>
+                    </a>
+
+                </li>
+
+                @can("Facturations.Voir les Facturations")
+                    <li class=" "><a href="{{route("facturations.index")}}" title="Facturation">
                             <em class="fa fa-gavel"></em><span data-localize="sidebar.nav.JURY">Facturation</span>
                         </a>
                     </li>
