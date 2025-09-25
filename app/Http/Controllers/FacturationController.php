@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\TransactionUpdated;
 use App\Models\Compte;
 use App\Models\Service;
 use App\Models\Transaction;
@@ -57,6 +58,8 @@ class FacturationController extends Controller
 
         $trimestreannee_id = TrimestreAnnee::query()->where('statut', "=", 1)->first()->id;
 
+        $transactionsoperateur = Compte::getInfosTransactionsTousOperateurs( Carbon::now()->format('H:i:s'));
+
         if (!is_null($compte)) {
 
             if ($compte->actif == 1){
@@ -69,12 +72,12 @@ class FacturationController extends Controller
 
                         if (count($dejadacturer) < $compte->capacite) {
 
-                            $this->insertion($compte, $trimestreannee_id);
+                            $this->insertion($compte, $trimestreannee_id, $transactionsoperateur);
 
                             return response()->json([
                                 'success' => true,
                                 'message' => 'Facturation effectuée avec succès',
-                                'transactionsoperateur' => Compte::getInfosTransactionsTousOperateurs( Carbon::now()->format('H:i:s')),
+                                'transactionsoperateur' => $transactionsoperateur,
                                 'etudiantfactureparoperateur' => Compte::getEtudiantsOperateurDuJour(Auth::guard("operateur")->id(), Carbon::now()->format('H:i:s'))
                             ]);
 
@@ -83,7 +86,7 @@ class FacturationController extends Controller
 
                         return response()->json([
                             'success' => false,
-                            'message' => 'Vous avez atteint la limite de facturation pour ce service de votre QR Code.'
+                            'message' => 'La limite de facturation pour ce QR Code a été atteinte pour le service en cours.'
                         ], 422);
 
                     }
@@ -95,12 +98,12 @@ class FacturationController extends Controller
 
                         if (mb_strtolower($compte->modeRechargement) === "auto"){
 
-                            $this->insertion($compte, $trimestreannee_id);
+                            $this->insertion($compte, $trimestreannee_id, $transactionsoperateur);
 
                             return response()->json([
                                 'success' => true,
                                 'message' => 'Facturation effectuée avec succès',
-                                'transactionsoperateur' => Compte::getInfosTransactionsTousOperateurs(Carbon::now()->format('H:i:s')),
+                                'transactionsoperateur' => $transactionsoperateur,
                                 'etudiantfactureparoperateur' => Compte::getEtudiantsOperateurDuJour(Auth::guard("operateur")->id(), Carbon::now()->format('H:i:s'))
                             ]);
 
@@ -111,7 +114,7 @@ class FacturationController extends Controller
 
                         if ($solde >= 0) {
 
-                            $this->insertion($compte, $trimestreannee_id);
+                            $this->insertion($compte, $trimestreannee_id, $transactionsoperateur);
 
                             $compterestau = Compte::query()->findOrFail($compte->idCompte);
 
@@ -125,7 +128,7 @@ class FacturationController extends Controller
                             return response()->json([
                                 'success' => true,
                                 'message' => 'Facturation effectuée avec succès',
-                                'transactionsoperateur' => Compte::getInfosTransactionsTousOperateurs(Carbon::now()->format('H:i:s')),
+                                'transactionsoperateur' => $transactionsoperateur,
                                 'etudiantfactureparoperateur' => Compte::getEtudiantsOperateurDuJour(Auth::guard("operateur")->id(), Carbon::now()->format('H:i:s'))
                             ]);
 
@@ -168,7 +171,7 @@ class FacturationController extends Controller
 
     }
 
-    private function insertion($compte, $trimestreannee_id){
+    private function insertion($compte, $trimestreannee_id, $transactionsoperateur){
 
         $dataFacture = [
             'comptesrestaux_id' => $compte->idCompte,
@@ -178,7 +181,17 @@ class FacturationController extends Controller
             'userAdd'=> Auth::guard("operateur")->id(),
         ];
 
+        $dataRefresh = [
+
+            'totalTransaction' => $transactionsoperateur->totalTransaction,
+            'libelleService'   => $transactionsoperateur->libelleService,
+            'valeur'           => $transactionsoperateur->valeur,
+
+        ];
+
         Transaction::query()->create($dataFacture);
+
+        broadcast(new TransactionUpdated($dataRefresh));
 
     }
 

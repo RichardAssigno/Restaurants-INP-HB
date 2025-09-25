@@ -128,13 +128,13 @@
             </li><!-- END user profil-->
         </ul><!-- END Right Navbar-->
         <!-- START Search form-->
-        <form class="navbar-form" role="search" action="/">
+        <form class="navbar-form" role="search" action="javascript:void(0);">
             <div class="form-group text-center">
-                <input class="form-control text-center" type="text" placeholder="Saisir le text ici pour rechercher ...">
+                <input class="form-control text-center" type="text" placeholder="Saisir le texte ici pour rechercher ...">
                 <div class="fas fa-times navbar-form-close" data-search-dismiss=""></div>
             </div>
+        </form>
 
-        </form><!-- END Search form-->
     </nav><!-- END Top Navbar-->
 
 
@@ -143,8 +143,9 @@
 </header>
 
 
-<div class="row mb-2 resultat" style="display: none" >
-    <div class="container" id="resultat">
-
-    </div>
+<div class="row mb-2 resultat text-center" style="display: none">
+    <div class="container" id="resultat"></div>
 </div>
+
+
+

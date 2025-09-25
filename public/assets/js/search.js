@@ -1,58 +1,56 @@
 document.addEventListener("DOMContentLoaded", function () {
+    console.log("Search.js chargé ✅");
+
     const searchInput = document.querySelector(".navbar-form .form-control");
-    if (searchInput) {
-        searchInput.addEventListener("keyup", function (event) {
-            const query = event.target.value;
+    const resultatDiv = document.querySelector("#resultat");
+    const resultatContainer = document.querySelector(".resultat");
 
-            if (query.length > 7) {
+    if (!searchInput) return;
 
-                fetch(`/search?query=${encodeURIComponent(query)}`)
-                    .then(response => response.json())
-                    .then(data => {
+    searchInput.addEventListener("keyup", function (event) {
+        const query = event.target.value.trim();
 
+        if (query.length > 3) {
+            fetch(`/search?query=${encodeURIComponent(query)}`, {
+                headers: { "Accept": "application/json" }
+            })
+                .then(response => response.ok ? response.json() : Promise.reject(response.status))
+                .then(data => {
+                    let resultatHtml = "";
 
-                        // Vérifier s'il y a des résultats
-                        if (data.length > 0) {
-                            let resultatHtml = ""; // Variable pour accumuler les éléments HTML
-
-                            data.forEach(etudiant => {
-                                // Ajout de chaque composant HTML dans la variable
-                                resultatHtml += `
-                                <div class="m-2 m-sm-1 m-md-2 ml-lg-4 mt-3 alert alert-info alert-dismissible fade show search-resultat"
+                    if (data.length > 0) {
+                        data.forEach(etudiant => {
+                            resultatHtml += `
+                                <div class="alert alert-info alert-dismissible fade show search-resultat text-center"
                                      role="alert"
+                                     style="width: 80%; background-color:#23b7e51c; cursor:pointer;"
                                      onmouseover="this.style.backgroundColor='#f2f4f4';"
                                      onmouseout="this.style.backgroundColor='#23b7e51c';">
-                                    <button class="close" type="button" data-dismiss="alert" aria-label="Close">
-                                        <span aria-hidden="true">×</span>
-                                    </button>
                                     <a href="/search/affiche-etudiant/${etudiant.id}" class="search-url">
                                         ${etudiant.matricule} ${etudiant.nom} ${etudiant.prenoms}
                                     </a>
                                 </div>
-                            `; });
+                            `;
+                        });
+                    } else {
+                        resultatHtml = `
+                            <div class="alert alert-warning text-center" style="width: 80%;">
+                                Aucun résultat pour <b>${query}</b>
+                            </div>
+                        `;
+                    }
 
-                            console.log(resultatHtml);
-                        // Injecter tous les éléments HTML dans #resultat
-                        $("#resultat").html(resultatHtml);
-
-                            // Afficher la div contenant les résultats
-                            $(".resultat").show();
-                        } else {
-                            // Afficher un message si aucun résultat n'est trouvé
-                            $("#resultat").html(`<div class="m-2 m-sm-1 m-md-2 ml-lg-4 alert alert-info alert-dismissible fade show search-resultat text-center" role="alert"><button class="close" type="button" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">×</span></button>Aucun resultat pour cette recherche</div>`);
-
-                            $(".resultat").show();
-                        }
-
-                    })
-                    .catch(error => console.error("Erreur lors de la recherche :", error));
-            } else {
-                $("#resultat").html("");
-                // Masquer le popup si la recherche est vide ou trop courte
-                $(".resultat").hide();
-            }
-        });
-    }
-
-
+                    resultatDiv.innerHTML = resultatHtml;
+                    resultatContainer.style.display = "block";
+                })
+                .catch(error => {
+                    console.error("Erreur lors de la recherche :", error);
+                    resultatDiv.innerHTML = `<div class="alert alert-danger text-center" style="width: 80%;">Une erreur est survenue</div>`;
+                    resultatContainer.style.display = "block";
+                });
+        } else {
+            resultatDiv.innerHTML = "";
+            resultatContainer.style.display = "none";
+        }
+    });
 });

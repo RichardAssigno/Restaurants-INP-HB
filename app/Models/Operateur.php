@@ -52,5 +52,31 @@ class Operateur extends Authenticatable
             ->get();
     }
 
+    public static function getInfoOperateur($idOperateur)
+    {
+        return DB::table('operateurs as o')
+            ->join('operateursprestataires as op', function($join) {
+                $join->on('op.operateurs_id', '=', 'o.id')
+                    ->where('op.supprimer', 0);
+            })
+            ->join('prestataires as p', function($join) {
+                $join->on('p.id', '=', 'op.prestataires_id')
+                    ->where('p.supprimer', 0);
+            })
+            ->select(
+                'o.id as idOperateur',
+                'o.nom',
+                'o.prenoms',
+                'o.login',
+                'p.id as idPrestataire',
+                'p.libelle as libellePrestataire',
+                'p.codePrestataire'
+            )
+            ->where('o.id', $idOperateur)
+            ->where('o.supprimer', 0)
+            ->first();
+    }
+
+
 
 }

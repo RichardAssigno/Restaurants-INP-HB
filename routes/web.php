@@ -5,6 +5,7 @@ use App\Http\Controllers\ComptesRestauxController;
 use App\Http\Controllers\ConnexionController;
 use App\Http\Controllers\FacturationController;
 use App\Http\Controllers\PermissionsController;
+use App\Http\Controllers\RechercherController;
 use App\Http\Controllers\RolesController;
 use App\Http\Controllers\TableaudebordController;
 use Illuminate\Support\Facades\Route;
@@ -18,6 +19,11 @@ Route::middleware('auth:operateur')->group(function () {
     Route::get('/', [TableaudebordController::class, 'index'])->name('tableaudebord.index');
     Route::post('/tableau-de-bord', [TableaudebordController::class, 'recuperer'])->name('tableaudebord.recuperer');
     Route::post('se-déconnecter', [ConnexionController::class, 'logout'])->name('logout');
+
+    Route::get('/bilan-en-pdf', [TableaudebordController::class, 'pdf'])->name('bilan.pdf');
+
+    Route::get('/search', [RechercherController::class, 'rechercher'])->name('rechercher.etudiants');
+    Route::get('/search/affiche-etudiant/{id}', [RechercherController::class, 'afficher'])->name('afficher.etudiants');
 
     Route::get('/Roles', [RolesController::class, 'index'])->name('roles.index');
     Route::post('/Roles-Ajouter', [RolesController::class, 'ajouter'])->name('roles.ajouter');

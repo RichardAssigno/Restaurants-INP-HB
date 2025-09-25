@@ -32,8 +32,8 @@
 <script src="{{asset("assets/easy-pie-chart/dist/jquery.easypiechart.js")}}"></script><!-- MOMENT JS-->
 <script src="{{asset("assets/moment/min/moment-with-locales.js")}}"></script>
 
+<script src="{{asset("assets/js/search.js")}}"></script>
 
 <script src="{{asset("assets/js/app.js")}}"></script>
-<script src="{{asset("assets/js/search.js")}}"></script>
 
 

@@ -372,9 +372,27 @@ function _typeof(e) {
             $("#knob-chart4").knob(e));
     }),
     $(function () {
-        var e, t, n;
-        "undefined" != typeof Chart &&
-        ((n = {
+        if (typeof Chart === "undefined") return;
+
+        // Fonction utilitaire pour générer des données aléatoires
+        function randomData(length = 7, max = 100) {
+            return Array.from({ length }, () => Math.round(Math.random() * max));
+        }
+
+        // Fonction pour créer un graphique si le canvas existe
+        function createChart(id, type, data, options = {}) {
+            const canvas = document.getElementById(id);
+            if (!canvas) return;
+            const ctx = canvas.getContext("2d");
+            new Chart(ctx, {
+                type: type,
+                data: data,
+                options: Object.assign({ legend: { display: false } }, options),
+            });
+        }
+
+        // Line chart
+        createChart("chartjs-linechart", "line", {
             labels: ["January", "February", "March", "April", "May", "June", "July"],
             datasets: [
                 {
@@ -382,64 +400,84 @@ function _typeof(e) {
                     backgroundColor: "rgba(114,102,186,0.2)",
                     borderColor: "rgba(114,102,186,1)",
                     pointBorderColor: "#fff",
-                    data: [
-                        (t = function () {
-                            return Math.round(100 * Math.random());
-                        })(),
-                        t(),
-                        t(),
-                        t(),
-                        t(),
-                        t(),
-                        t(),
-                    ],
+                    data: randomData(),
                 },
-                { label: "My Second dataset", backgroundColor: "rgba(35,183,229,0.2)", borderColor: "rgba(35,183,229,1)", pointBorderColor: "#fff", data: [t(), t(), t(), t(), t(), t(), t()] },
+                {
+                    label: "My Second dataset",
+                    backgroundColor: "rgba(35,183,229,0.2)",
+                    borderColor: "rgba(35,183,229,1)",
+                    pointBorderColor: "#fff",
+                    data: randomData(),
+                },
             ],
-        }),
-            (e = document.getElementById("chartjs-linechart").getContext("2d")),
-            new Chart(e, { data: n, type: "line", options: { legend: { display: !1 } } }),
-            (n = {
-                labels: ["January", "February", "March", "April", "May", "June", "July"],
-                datasets: [
-                    { backgroundColor: "#23b7e5", borderColor: "#23b7e5", data: [t(), t(), t(), t(), t(), t(), t()] },
-                    { backgroundColor: "#5d9cec", borderColor: "#5d9cec", data: [t(), t(), t(), t(), t(), t(), t()] },
-                ],
-            }),
-            (t = document.getElementById("chartjs-barchart").getContext("2d")),
-            new Chart(t, { data: n, type: "bar", options: { legend: { display: !1 } } }),
-            (n = document.getElementById("chartjs-doughnutchart").getContext("2d")),
-            new Chart(n, {
-                data: { labels: ["Purple", "Yellow", "Blue"], datasets: [{ data: [300, 50, 100], backgroundColor: ["#7266ba", "#fad732", "#23b7e5"], hoverBackgroundColor: ["#7266ba", "#fad732", "#23b7e5"] }] },
-                type: "doughnut",
-                options: { legend: { display: !1 } },
-            }),
-            (n = document.getElementById("chartjs-piechart").getContext("2d")),
-            new Chart(n, {
-                data: { labels: ["Purple", "Yellow", "Blue"], datasets: [{ data: [300, 50, 100], backgroundColor: ["#7266ba", "#fad732", "#23b7e5"], hoverBackgroundColor: ["#7266ba", "#fad732", "#23b7e5"] }] },
-                type: "pie",
-                options: { legend: { display: !1 } },
-            }),
-            (n = document.getElementById("chartjs-polarchart").getContext("2d")),
-            new Chart(n, {
-                data: { datasets: [{ data: [11, 16, 7, 3], backgroundColor: ["#f532e5", "#7266ba", "#f532e5", "#7266ba"], label: "My dataset" }], labels: ["Label 1", "Label 2", "Label 3", "Label 4"] },
-                type: "polarArea",
-                options: { legend: { display: !1 } },
-            }),
-            (n = document.getElementById("chartjs-radarchart").getContext("2d")),
-            new Chart(n, {
-                data: {
-                    labels: ["Eating", "Drinking", "Sleeping", "Designing", "Coding", "Cycling", "Running"],
-                    datasets: [
-                        { label: "My First dataset", backgroundColor: "rgba(114,102,186,0.2)", borderColor: "rgba(114,102,186,1)", data: [65, 59, 90, 81, 56, 55, 40] },
-                        { label: "My Second dataset", backgroundColor: "rgba(151,187,205,0.2)", borderColor: "rgba(151,187,205,1)", data: [28, 48, 40, 19, 96, 27, 100] },
-                    ],
+        });
+
+        // Bar chart
+        createChart("chartjs-barchart", "bar", {
+            labels: ["January", "February", "March", "April", "May", "June", "July"],
+            datasets: [
+                { backgroundColor: "#23b7e5", borderColor: "#23b7e5", data: randomData() },
+                { backgroundColor: "#5d9cec", borderColor: "#5d9cec", data: randomData() },
+            ],
+        });
+
+        // Doughnut chart
+        createChart("chartjs-doughnutchart", "doughnut", {
+            labels: ["Purple", "Yellow", "Blue"],
+            datasets: [
+                {
+                    data: [300, 50, 100],
+                    backgroundColor: ["#7266ba", "#fad732", "#23b7e5"],
+                    hoverBackgroundColor: ["#7266ba", "#fad732", "#23b7e5"],
                 },
-                type: "radar",
-                options: { legend: { display: !1 } },
-            }));
-    }),
-    $(function () {
+            ],
+        });
+
+        // Pie chart
+        createChart("chartjs-piechart", "pie", {
+            labels: ["Purple", "Yellow", "Blue"],
+            datasets: [
+                {
+                    data: [300, 50, 100],
+                    backgroundColor: ["#7266ba", "#fad732", "#23b7e5"],
+                    hoverBackgroundColor: ["#7266ba", "#fad732", "#23b7e5"],
+                },
+            ],
+        });
+
+        // Polar chart
+        createChart("chartjs-polarchart", "polarArea", {
+            labels: ["Label 1", "Label 2", "Label 3", "Label 4"],
+            datasets: [
+                {
+                    data: [11, 16, 7, 3],
+                    backgroundColor: ["#f532e5", "#7266ba", "#f532e5", "#7266ba"],
+                    label: "My dataset",
+                },
+            ],
+        });
+
+        // Radar chart
+        createChart("chartjs-radarchart", "radar", {
+            labels: ["Eating", "Drinking", "Sleeping", "Designing", "Coding", "Cycling", "Running"],
+            datasets: [
+                {
+                    label: "My First dataset",
+                    backgroundColor: "rgba(114,102,186,0.2)",
+                    borderColor: "rgba(114,102,186,1)",
+                    data: [65, 59, 90, 81, 56, 55, 40],
+                },
+                {
+                    label: "My Second dataset",
+                    backgroundColor: "rgba(151,187,205,0.2)",
+                    borderColor: "rgba(151,187,205,1)",
+                    data: [28, 48, 40, 19, 96, 27, 100],
+                },
+            ],
+        });
+    });
+
+$(function () {
         var e, o, r;
         "undefined" != typeof Chartist &&
         (new Chartist.Bar(
