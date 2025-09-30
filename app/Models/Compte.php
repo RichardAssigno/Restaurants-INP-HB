@@ -118,6 +118,7 @@ class Compte extends Model
             ->whereDate('t.created_at', now()) // équivalent DATE(t.created_at) = CURDATE()
             ->select(
                 'e.nom',
+                'e.id as idEtudiant',
                 'e.matricule',
                 'e.prenoms',
                 'e.telephone',

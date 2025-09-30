@@ -26,14 +26,22 @@ class RechercherController extends Controller
     {
 
         $etudiant = Etudiant::getEtudiantAvecPhoto($id);
-        $infostransactions = Transaction::dernieresTransactions($etudiant->idCompte);
 
-        return view('bilansetudiants.index', [
+        if (!is_null($etudiant)) {
 
-            'infostransactions' => $infostransactions,
-            'etudiant' => $etudiant,
+            $infostransactions = Transaction::dernieresTransactions($etudiant->idCompte);
 
-        ]);
+            return view('bilansetudiants.index', [
+
+                'infostransactions' => $infostransactions,
+                'etudiant' => $etudiant,
+
+            ]);
+
+        }
+
+        return redirect()->back()->with('error', 'Ce matricule n\'a pas de compte restaurant.');
+
 
     }
 

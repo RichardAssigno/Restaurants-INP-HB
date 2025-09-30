@@ -44,7 +44,7 @@
                                     <div class="ml-auto">
                                         <div class="card-body text-right">
                                             <h4 class="mt-0">{{$etudiant->libelleTypeCompte ?? ''}}</h4>
-                                            <p class="mb-0 text-muted">TYPE COMPTE</p>
+                                            <p class="mb-0 text-muted">TYPE DE COMPTE</p>
                                         </div>
                                     </div>
                                 </div>
@@ -65,7 +65,7 @@
                                 <div class="d-flex align-items-center"><em class="fas fa-money-bill-wave fa-2x text-inverse"></em>
                                     <div class="ml-auto">
                                         <div class="card-body text-right">
-                                            <h4 class="mt-0">{{$etudiant->solde . " FCFA " ?? ''}}</h4>
+                                            <h4 class="mt-0">{{  mb_strtolower($etudiant->modeRechargement) == "auto" ? "INFINI" : $etudiant->solde . " FCFA " ?? ''}}</h4>
                                             <p class="mb-0 text-muted">SOLDE</p>
                                         </div>
                                     </div>
@@ -105,7 +105,7 @@
                     <div class="card card-default" style="background-image: url({{asset("assets/img/profile-bg.jpg")}})">
                         <div class="card-header"></div>
                         <div class="card-body text-center">
-                            <img class="mb-2 img-fluid rounded-circle thumb64" @if(!is_null($etudiant->typePhoto) && !is_null($etudiant->photo)) src="data:{{ $etudiant->typePhoto ?? "" }};base64,{{ $cle->photo ?? ""}}" @else src="{{asset("assets/img/avatar.png")}}" @endif  alt="Photo">
+                            <img class="mb-2 img-fluid rounded-circle thumb64" @if(!is_null($etudiant->typePhoto) && !is_null($etudiant->photo)) src="data:{{ $etudiant->typePhoto ?? "" }};base64,{{ $etudiant->photo ?? ""}}" @else src="{{asset("assets/img/avatar.png")}}" @endif  alt="Photo">
                             <h4>{{ mb_strtoupper($etudiant->nom ?? '') . ' ' . mb_strtoupper($etudiant->prenoms ?? '' ) }}</h4>
                             <p>{{$etudiant->matricule . " | " . $etudiant->email }}</p>
                         </div>
@@ -139,7 +139,7 @@
                                                 <td>{{ $i ++ ?? '' }}</td>
                                                 <td>{{\Carbon\Carbon::parse($key->created_at)->format('d.m.Y H:i:s') ?? '' }}</td>
                                                 <td>{{ $key->libelleService ?? '' }}</td>
-                                                <td>{{ $key->valeur ?? '' }}</td>
+                                                <td>{{ $key->valeur ?? '' }} FCFA</td>
                                                 <td>{{ mb_strtoupper($key->nomOperateur) . " " . mb_strtoupper($key->prenomsOperateur) ?? '' }}</td>
                                                 <td>{{ $key->contactOperateur ?? '' }}</td>
                                                 <td>{{ $key->libellePrestataire ?? '' }}</td>

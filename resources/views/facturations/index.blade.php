@@ -87,15 +87,16 @@
                                         @csrf
                                         <div class="row mb-3">
                                             <label>Code Pin ou le Token de Validation *</label>
-                                            <input type="text" class="form-control" name="code"><br>
+                                            <input type="password" class="form-control" name="code" id="codePin" inputmode="numeric" required>
+                                            <br>
                                         </div>
-
                                         <div class="col-auto text-center">
                                             <button class="btn btn-primary mb-2" type="submit">
                                                 Valider
                                             </button>
                                         </div>
                                     </form>
+
                                 </div>
                             </div>
                         </div>
@@ -114,24 +115,26 @@
                         <div id="etudiants-list" class="slimScrollDiv">
                             @if($etudiantfactureparoperateur->isNotEmpty())
                                 @foreach($etudiantfactureparoperateur as $cle)
-                                    <div class="list-group-item list-group-item-action">
-                                        <div class="media">
-                                            <img class="align-self-start mx-2 circle thumb32" src="data:{{ $cle->typePhoto ?? "" }};base64,{{ $cle->photo ?? ""}}" alt="Photo">
+                                    <a href="{{route("afficher.etudiants", ["id" => $cle->idEtudiant])}}" style="text-decoration: none">
+                                        <div class="list-group-item list-group-item-action">
+                                            <div class="media">
+                                                <img class="align-self-start mx-2 circle thumb32" src="data:{{ $cle->typePhoto ?? "" }};base64,{{ $cle->photo ?? ""}}" alt="Photo">
 
-                                            <div class="media-body text-truncate">
-                                                <p class="mb-1">
-                                                    <strong class="text-primary">
-                                                        <span class="circle bg-success circle-lg text-left"></span>
-                                                        <span>{{" ( " . $cle->totalTransactions . " ) " . $cle->matricule . " | " . $cle->nom . " " . $cle->prenoms }}</span>
-                                                    </strong>
-                                                </p>
-                                                <p class="mb-1 text-sm">
-                                                    {{ $cle->telephone . " | Opérateur : " . $cle->nomOperateur }}
-                                                </p>
+                                                <div class="media-body text-truncate">
+                                                    <p class="mb-1">
+                                                        <strong class="text-primary">
+                                                            <span class="circle bg-success circle-lg text-left"></span>
+                                                            <span>{{" ( " . $cle->totalTransactions . " ) " . $cle->matricule . " | " . $cle->nom . " " . $cle->prenoms }}</span>
+                                                        </strong>
+                                                    </p>
+                                                    <p class="mb-1 text-sm">
+                                                        {{ $cle->telephone . " | Opérateur : " . $cle->nomOperateur }}
+                                                    </p>
+                                                </div>
+                                                <div class="ml-auto"><small class="text-muted ml-2">{{ \Carbon\Carbon::parse($cle->dateTransaction)->format('H:i:s') }}</small></div>
                                             </div>
-                                            <div class="ml-auto"><small class="text-muted ml-2">{{ \Carbon\Carbon::parse($cle->dateTransaction)->format('H:i:s') }}</small></div>
                                         </div>
-                                    </div>
+                                    </a>
                                 @endforeach
                             @else
                                 <p class="text-muted text-center">Aucun étudiant trouvé</p>
@@ -226,6 +229,17 @@
 
 <script>
 
+    // ✅ Bloquer la saisie autre que numérique
+    $(document).on("input", "#codePin", function() {
+        this.value = this.value.replace(/\D/g, ""); // enlève tout sauf chiffres
+    });
+
+    $(document).on("keypress", "#codePin", function(e) {
+        if (!/[0-9]/.test(e.key)) {
+            e.preventDefault();
+        }
+    });
+
     $(document).ready(function() {
 
         $('.select2-mois').select2({
@@ -271,7 +285,7 @@
                     }
                 },
                 error: function(xhr) {
-                    Swal.fire({ icon: 'error', title: 'Erreur', text: "Erreur du rafraichissement" });
+                    console.log(xhr.responseText);
                 }
             });
         }
@@ -361,7 +375,6 @@
 
 
         $('#ajoutParCodePin').on('submit', function(e) {
-
             e.preventDefault();
 
             const formData = $(this).serialize();
@@ -372,6 +385,10 @@
                 data: formData,
                 success: function (response) {
                     majUI(response);
+
+                    $('#ajoutParCodePin input[name="code"]').val('');
+
+                    $('#ajoutParCodePin input[name="code"]').focus();
                 },
                 error: function(xhr) {
                     let errorHtml = "Une erreur est survenue.";
@@ -384,6 +401,7 @@
                 }
             });
         });
+
 
         function majUI(response) {
             // Toast succès
