@@ -47,6 +47,8 @@ class Compte extends Model
                 'cl.id as idCarte',
                 'cl.libelle as libelleCarte',
                 'cl.capacite',
+                'cl.dateDebut',
+                'cl.nombreJours',
                 'd.libelle as libelleDirection',
                 'tc.libelle as libelleTypeCompte',
                 'f.id as idFacturation',

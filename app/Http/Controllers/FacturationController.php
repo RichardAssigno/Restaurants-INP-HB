@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Events\TransactionUpdated;
+use App\Models\CarteLibre;
 use App\Models\Compte;
 use App\Models\Service;
 use App\Models\Transaction;
@@ -68,25 +69,56 @@ class FacturationController extends Controller
 
                     if (!is_null($compte->idCarte) && !is_null($compte->libelleDirection)) {
 
-                        $dejadacturer = Transaction::transactioncartelibre($compte->idCompte, $compte->codeService);
+                        $dateDebut = Carbon::parse($compte->dateDebut); // convertit en objet Carbon
+                        $aujourdhui = Carbon::now();
+                        $dateFin = $dateDebut->copy()->addDays($compte->nombreJours);
 
-                        if (count($dejadacturer) < $compte->capacite) {
+                        $comptelibre = Compte::query()->findOrFail($compte->idCompte);
 
-                            $this->insertion($compte, $trimestreannee_id, $transactionsoperateur);
+                        if (!($aujourdhui->lt($dateDebut))) {
 
-                            return response()->json([
-                                'success' => true,
-                                'message' => 'Facturation effectuée avec succès',
-                                'transactionsoperateur' => $transactionsoperateur,
-                                'etudiantfactureparoperateur' => Compte::getEtudiantsOperateurDuJour(Auth::guard("operateur")->id(), Carbon::now()->format('H:i:s'))
+                            if ($aujourdhui->between($dateDebut, $dateFin)) {
+
+                                $dejadacturer = Transaction::transactioncartelibre($compte->idCompte, $compte->codeService);
+
+                                if (count($dejadacturer) < $compte->capacite) {
+
+                                    $this->insertion($compte, $trimestreannee_id, $transactionsoperateur);
+
+                                    return response()->json([
+                                        'success' => true,
+                                        'message' => 'Facturation effectuée avec succès',
+                                        'transactionsoperateur' => $transactionsoperateur,
+                                        'etudiantfactureparoperateur' => Compte::getEtudiantsOperateurDuJour(Auth::guard("operateur")->id(), Carbon::now()->format('H:i:s'))
+                                    ]);
+
+
+                                }
+
+                                return response()->json([
+                                    'success' => false,
+                                    'message' => 'La limite de facturation pour ce QR Code a été atteinte pour le service en cours.'
+                                ], 422);
+
+                            }
+
+                            $comptelibre->update([
+
+                                'actif' => 0,
+                                'userUpdate' => Auth::guard("operateur")->id(),
+
                             ]);
 
+                            return response()->json([
+                                'success' => false,
+                                'message' => "Le delai d'utilisation de votre carte a été dépassé ."
+                            ], 422);
 
                         }
 
                         return response()->json([
                             'success' => false,
-                            'message' => 'La limite de facturation pour ce QR Code a été atteinte pour le service en cours.'
+                            'message' => "Votre carte sera disponible à partir de $compte->dateDebut ."
                         ], 422);
 
                     }

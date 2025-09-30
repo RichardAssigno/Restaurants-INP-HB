@@ -71,7 +71,7 @@
 
             </div>
             <div class="row justify-content-center">
-                <div class="col-md-8">
+                <div class="col-lg-12 col-md-12 col-sm-12">
                     <!-- START card-->
                     <div class="card card-default" id="cardDemo1">
                         <div class="card-header">
@@ -106,7 +106,7 @@
 
             <div class="row justify-content-center">
 
-                <div class="col-md-8">
+                <div class="col-lg-12 col-md-12 col-sm-12">
 
                     <div class="card card-default">
                         <div class="card-header">
