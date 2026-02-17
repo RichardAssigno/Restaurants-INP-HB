@@ -44,7 +44,6 @@ class Etudiant extends Model
                 DB::raw('TO_BASE64(p.photo) as photo'),
                 'p.typePhoto',
                 'cr.id as idCompte',
-                'cr.capacite',
                 'cr.solde',
                 'cr.traques',
                 'cr.actif',

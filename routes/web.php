@@ -43,6 +43,7 @@ Route::middleware('auth:operateur')->group(function () {
 
     Route::get('/comptes', [ComptesController::class, 'index'])->name('comptes.index');
     Route::post('/Ajouter-Comptes', [ComptesController::class, 'ajouter'])->name('comptes.ajouter');
+    Route::post('/Modifier-Comptes', [ComptesController::class, 'modifier'])->name('comptes.modifier');
     Route::delete('/comptes-supprimer/{id}', [ComptesController::class, 'supprimer'])->name('comptes.supprimer');
     Route::get('/desactiver-compte/{id}', [ComptesController::class, 'desactiver'])->name('comptes.desactiver');
     Route::get('/activer-compte/{id}', [ComptesController::class, 'activer'])->name('comptes.activer');

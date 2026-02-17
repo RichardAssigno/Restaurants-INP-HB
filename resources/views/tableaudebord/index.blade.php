@@ -97,7 +97,7 @@
                     <!-- START card-->
                     <div class="card card-default" id="cardDemo1">
                         <div class="card-header">
-                            Sélectionner une Date
+                            Sélectionner une Date pour afficher le bilan mensuel
                             <a class="float-right" href="#" data-tool="card-collapse" data-toggle="tooltip" title="" data-original-title="Collapse Card">
                                 <em class="fa fa-minus"></em>
                             </a>

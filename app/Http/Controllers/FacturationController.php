@@ -70,8 +70,9 @@ class FacturationController extends Controller
                     if (!is_null($compte->idCarte) && !is_null($compte->libelleDirection)) {
 
                         $dateDebut = Carbon::parse($compte->dateDebut); // convertit en objet Carbon
+
                         $aujourdhui = Carbon::now();
-                        $dateFin = $dateDebut->copy()->addDays($compte->nombreJours);
+                        $dateFin = $dateDebut->copy()->addDays((int)$compte->nombreJours);
 
                         $comptelibre = Compte::query()->findOrFail($compte->idCompte);
 

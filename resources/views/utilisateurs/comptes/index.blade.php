@@ -217,19 +217,19 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
                 </div>
                 <div class="modal-body">
-                    <input type="hidden" name="operateur_id" id="operateur_id">
+                    <input type="hidden" name="operateur_id" id="operateurId">
 
                     <div class="m-1">
                         <label for="nom" class="form-label mt-2">Nom</label>
-                        <input type="text" class="form-control" id="nom" name="nom">
+                        <input type="text" class="form-control" id="nomModif" name="nom">
                     </div>
                     <div class="m-1">
                         <label for="prenoms" class="form-label mt-2">Prenoms</label>
-                        <input type="text" class="form-control" id="prenoms" name="prenoms">
+                        <input type="text" class="form-control" id="prenomsModif" name="prenoms">
                     </div>
                     <div class="m-1">
                         <label for="login" class="form-label mt-2">Login</label>
-                        <input type="text" class="form-control" id="login" name="login">
+                        <input type="text" class="form-control" id="loginModif" name="login">
                     </div>
                     <div class="m-1">
                         <label for="password" class="form-label mt-2">Mot de passe</label>
@@ -237,7 +237,7 @@
                     </div>
                     <div class="m-1">
                         <label for="telephone" class="form-label mt-2">Téléphone</label>
-                        <input type="text" class="form-control" id="telephone" name="telephone">
+                        <input type="text" class="form-control" id="telephoneModif" name="telephone">
                     </div>
 
                     <div class="m-1">
@@ -370,11 +370,11 @@
             let telephone = row.find('.telephone').text().trim();
 
 
-            $('#operateur_id').val(idOperateur);
-            $('#nom').val(nom);
-            $('#prenoms').val(prenoms);
-            $('#login').val(login);
-            $('#telephone').val(telephone);
+            $('#operateurId').val(idOperateur);
+            $('#nomModif').val(nom);
+            $('#prenomsModif').val(prenoms);
+            $('#loginModif').val(login);
+            $('#telephoneModif').val(telephone);
 
             listeRoles(roleId);
 
@@ -418,7 +418,7 @@
 
             const formData = $(this).serialize();
 
-            let url = "{{--{{ route('comptes.modifier') }}--}}";
+            let url = "{{ route('comptes.modifier') }}";
 
             $.ajax({
                 url: url,

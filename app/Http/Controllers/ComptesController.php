@@ -115,22 +115,22 @@ class ComptesController extends Controller
     public function modifier(Request $request){
 
         $validator = Validator::make($request->all(), [
-            'admin_id' => ['required', 'string'],
+            'operateur_id' => ['required', 'string'],
             'nom' => ['required', 'string'],
             'prenoms' => ['required', 'string'],
-            'email' => ['required', 'string', Rule::unique('admins', 'email')->ignore($request->admin_id)],
+           /* 'email' => ['required', 'string', Rule::unique('admins', 'email')->ignore($request->admin_id)],*/
             'password' => ['nullable', 'string', 'min:8'], // facultatif pour update
             'telephone' => ['required', 'string'],
             'role' => ['required', 'exists:roles,id'],
         ], [
-            "admin_id.required" => "L'id de l'Admin est obligatoire",
+            "operateur_id.required" => "L'id de l'Admin est obligatoire",
             "nom.required" => "Le nom est obligatoire",
             "nom.string" => "Le nom doit être de type chaîne de caractère",
             "prenoms.required" => "Le prenoms est obligatoire",
             "prenoms.string" => "Le prenoms doit être de type chaîne de caractère",
-            "email.required" => "L'email est obligatoire",
+           /* "email.required" => "L'email est obligatoire",
             "email.string" => "L'email doit être de type chaîne de caractère",
-            "email.unique" => "L'email doit être unique",
+            "email.unique" => "L'email doit être unique",*/
             "telephone.required" => "Le téléphone est obligatoire",
             "telephone.string" => "Le téléphone doit être de type chaîne de caractère",
             "role.required" => "Veuillez sélectionner un rôle",
@@ -146,17 +146,16 @@ class ComptesController extends Controller
 
         $role = Role::query()->findOrFail($data['role']);
 
-        $admin = Admins::query()->findOrFail($data['admin_id']);
+        $admin = Operateur::query()->findOrFail($data['operateur_id']);
 
         if ($request->filled('password')) {
             $dataAdmin = [
 
                 "nom" => mb_strtoupper($data['nom']),
                 "prenoms" => mb_strtoupper($data['prenoms']),
-                "email" => $data['email'],
                 "telephone" => $data['telephone'],
                 "password" => Hash::make($data['password']),
-                "userUpdate" => Auth::id(),
+                "userUpdate" => Auth::guard("operateur")->id(),
 
             ];
         }else{
@@ -165,11 +164,20 @@ class ComptesController extends Controller
 
                 "nom" => mb_strtoupper($data['nom']),
                 "prenoms" => mb_strtoupper($data['prenoms']),
-                "email" => $data['email'],
                 "telephone" => $data['telephone'],
-                "userUpdate" => Auth::id(),
+                "userUpdate" => Auth::guard("operateur")->id(),
 
             ];
+
+            $verif = $admin->nom === $dataAdmin['nom'] && $admin->prenoms === $dataAdmin['prenoms'] && $admin->contact === $dataAdmin['telephone'];
+
+        }
+
+        dd($verif);
+
+        if ($verif) {
+
+
 
         }
 

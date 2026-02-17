@@ -106,7 +106,7 @@
 
             <div class="row justify-content-center">
 
-                <div class="col-lg-12 col-md-12 col-sm-12">
+                <div class="col-md-8">
 
                     <div class="card card-default">
                         <div class="card-header">
@@ -209,7 +209,9 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Scanner le QR Code</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                <button class="close" type="button" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
             </div>
             <div class="modal-body text-center">
                 <div class="card border-0">
@@ -298,14 +300,11 @@
         let canvas = document.getElementById("qr-canvas");
         let context = canvas.getContext("2d");
         let scanning = false;
-        let modalScan; // pour stocker l'instance du modal
+        let modalScan;
+        let bipAudio = new Audio('{{ asset("assets/music/sonqrcode.mp3") }}');
 
-        $("#btn-scan").on("click", function () {
-            // Crée ou récupère l'instance du modal
-            modalScan = new bootstrap.Modal(document.getElementById('modalScan'));
-            modalScan.show();
-
-            // Lance la caméra
+        //Démarre la caméra
+        function lancerCamera() {
             if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
                 navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
                     .then(function (stream) {
@@ -321,8 +320,30 @@
             } else {
                 Swal.fire("Erreur", "Caméra non supportée par ce navigateur", "error");
             }
+        }
+
+        //Stoppe proprement la caméra
+        function arreterCamera() {
+            scanning = false;
+            if (video.srcObject) {
+                video.srcObject.getTracks().forEach(track => track.stop());
+                video.srcObject = null;
+            }
+        }
+
+        //Premier clic sur bouton
+        $("#btn-scan").on("click", function () {
+            modalScan = new bootstrap.Modal(document.getElementById('modalScan'));
+            modalScan.show();
+            lancerCamera();
         });
 
+        // Fermeture du modal => stop caméra
+        document.getElementById('modalScan').addEventListener('hidden.bs.modal', function () {
+            arreterCamera();
+        });
+
+        // Boucle de capture et scan
         function tick() {
             if (!scanning) return;
 
@@ -337,15 +358,13 @@
                 if (code) {
                     scanning = false;
 
-                    // Stop caméra
-                    video.srcObject.getTracks().forEach(track => track.stop());
+                    //bip sonore
+                    bipAudio.play();
 
-                    // Ferme le modal
-                    if(modalScan) {
-                        modalScan.hide();
-                    }
+                    // Stop caméra pour éviter les lectures multiples
+                    arreterCamera();
 
-                    // Envoi vers Laravel
+                    // Envoi Ajax vers Laravel
                     $.ajax({
                         url: "{{ route('facturations.scanqrcode') }}",
                         method: "POST",
@@ -355,8 +374,12 @@
                         },
                         success: function (response) {
                             majUI(response);
-                        },
 
+                            // Relancer automatiquement la caméra si modal encore ouvert
+                            if ($('#modalScan').hasClass('show')) {
+                                lancerCamera();
+                            }
+                        },
                         error: function(xhr) {
                             let errorHtml = "Une erreur est survenue.";
                             if(xhr.status === 422 && xhr.responseJSON.errors){
@@ -365,6 +388,11 @@
                                 errorHtml = xhr.responseJSON.message;
                             }
                             Swal.fire({ icon: 'error', title: 'Erreur', text: errorHtml });
+
+                            // Relancer automatiquement la caméra si modal encore ouvert
+                            if ($('#modalScan').hasClass('show')) {
+                                lancerCamera();
+                            }
                         }
                     });
                 }
@@ -372,6 +400,7 @@
 
             requestAnimationFrame(tick);
         }
+
 
 
         $('#ajoutParCodePin').on('submit', function(e) {
