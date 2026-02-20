@@ -63,9 +63,9 @@ class FacturationController extends Controller
 
         if (!is_null($compte)) {
 
-            if ($compte->actif == 1){
+            if ((int)$compte->actif === 1){
 
-                if ($compte->traques == 0){
+                if ((int)$compte->traques === 0){
 
                     if (!is_null($compte->idCarte) && !is_null($compte->libelleDirection)) {
 
