@@ -9,9 +9,8 @@ use Spatie\Permission\Traits\HasRoles;
 
 class Operateur extends Authenticatable
 {
-
-    use Notifiable;
     use HasRoles;
+    use Notifiable;
 
     protected $table = 'operateurs';
 
@@ -34,8 +33,14 @@ class Operateur extends Authenticatable
     public static function getOperateursAvecRoles()
     {
         return DB::table('operateurs as o')
-            ->join('model_has_roles as mhr', 'mhr.model_id', '=', 'o.id')
-            ->join('roles as r', 'r.id', '=', 'mhr.role_id')
+            ->join('model_has_roles as mhr', function ($join) {
+                $join->on('mhr.model_id', '=', 'o.id')
+                    ->where('mhr.model_type', self::class);
+            })
+            ->join('roles as r', function ($join) {
+                $join->on('r.id', '=', 'mhr.role_id')
+                    ->where('r.guard_name', 'operateur');
+            })
             ->select(
                 'o.id as idOperateur',
                 'o.nom',
@@ -55,11 +60,11 @@ class Operateur extends Authenticatable
     public static function getInfoOperateur($idOperateur)
     {
         return DB::table('operateurs as o')
-            ->join('operateursprestataires as op', function($join) {
+            ->join('operateursprestataires as op', function ($join) {
                 $join->on('op.operateurs_id', '=', 'o.id')
                     ->where('op.supprimer', 0);
             })
-            ->join('prestataires as p', function($join) {
+            ->join('prestataires as p', function ($join) {
                 $join->on('p.id', '=', 'op.prestataires_id')
                     ->where('p.supprimer', 0);
             })
@@ -76,7 +81,4 @@ class Operateur extends Authenticatable
             ->where('o.supprimer', 0)
             ->first();
     }
-
-
-
 }

@@ -40,13 +40,13 @@
                     @csrf
                     <div class="mb-2">
                         <label for="email" class="form-label">Login</label>
-                        <input class="form-control" type="text" name="login" id="login" value="{{ isset($_COOKIE["login"]) ?? "" }}" required="" placeholder="Veillez entrer votre Login">
+                        <input class="form-control" type="text" name="login" id="login" value="{{ $_COOKIE["login"] ?? "" }}" required="" placeholder="Veuillez entrer votre login">
                     </div>
                     <div class="mb-2">
 
                         <label for="password" class="form-label">Mot de Passe</label>
                         <div class="input-group input-group-merge">
-                            <input type="password" id="password" name="password" value="{{ isset($_COOKIE["password"]) ?? "" }}" class="form-control" placeholder="Veillez entrer votre Mot de Passe">
+                            <input type="password" id="password" name="password" value="{{ $_COOKIE["password"] ?? "" }}" class="form-control" placeholder="Veuillez entrer votre mot de passe">
 
                         </div>
 
@@ -56,7 +56,7 @@
 
                     <div class="mb-3">
                         <div class="form-check">
-                            <input class="form-check-input" name="remember" {{ isset($_COOKIE["email"]) && isset($_COOKIE["password"]) ? "checked" : "" }} }} type="checkbox" id="checkbox-signin">
+                            <input class="form-check-input" name="remember" {{ isset($_COOKIE["login"]) && isset($_COOKIE["password"]) ? "checked" : "" }} type="checkbox" id="checkbox-signin">
                             <label class="form-check-label" for="checkbox-signin">
                                 Se souvenir de moi
                             </label>

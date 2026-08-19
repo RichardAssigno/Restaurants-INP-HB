@@ -17,11 +17,11 @@
                                     <div class="circle bg-success circle-lg"></div>
                                 </div>
                             </div><!-- Name and Job-->
-                            @php $user = session()->get("admin") @endphp
+                            @php $user = auth('operateur')->user() @endphp
                             <div class="user-block-info">
                                 <span
-                                    class="user-block-name">{{ $user->nom ?? 'Invité' }} {{ $user->prenoms ?? 'Invité' }}</span>
-                                <span class="user-block-role">{{ $user->email ?? 'Invité' }}</span></div>
+                                    class="user-block-name">{{ $user->nom ?? 'Invite' }} {{ $user->prenoms ?? '' }}</span>
+                                <span class="user-block-role">{{ $user->login ?? 'Operateur' }}</span></div>
                         </div>
                     </div>
                 </li><!-- END user info-->
@@ -46,11 +46,14 @@
                                 @can("Utilisateurs.Voir les Administrateurs")
                                 <li class=" "><a href="{{route("comptes.index")}}" title="aministrateurs"><span data-localize="sidebar.nav.ADMINS">Aministrateurs</span></a></li>
                             @endcan
-                            @can("Utilisateurs.Voir les Permissions")
+                            @can("Utilisateurs.Voir les Roles")
                                 <li class=" "><a href="{{route("roles.index")}}" title="roles"><span data-localize="sidebar.nav.ROLES">Roles</span></a></li>
                             @endcan
-                            @can("Utilisateurs.Voir les Roles")
+                            @can("Utilisateurs.Voir les Permissions")
                                 <li class=" "><a href="{{route("permissions.index")}}" title="autorisations"><span data-localize="sidebar.nav.AUTORISATIONS">Autorisations</span></a></li>
+                            @endcan
+                            @can("Utilisateurs.Voir les Administrateurs")
+                                <li class=" "><a href="{{route("compterestau.index")}}" title="comptes restaurant"><span>Comptes restaurant</span></a></li>
                             @endcan
                         </ul>
                     </li>
@@ -63,6 +66,7 @@
                     </li>
                 @endcan
 
+                @if(false)
                 @canany(['Directeurs d\'Ecole', 'Sous-Directeurs des Etudes', 'Sous-Directeurs des Cours', 'Inspecteurs de Filières'])
                     <li class=" ">
                         <a href="#responsabilites" title="Gestion des Responsabilité" data-toggle="collapse"><em
@@ -219,7 +223,8 @@
                         </ul>
                     </li>
 
-                @endcan
+                @endcanany
+                @endif
             </ul><!-- END sidebar nav-->
         </nav>
     </div><!-- END Sidebar (left)-->

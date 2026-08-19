@@ -271,23 +271,7 @@
         </form>
     </div>
 </div>
-{{--<div class="modal fade" id="myModal" tabindex="-1" aria-labelledby="myModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="myModalLabel">Confirmation de suppression</h5>
-                <button class="close" type="button" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-            </div>
-            <div class="modal-body" style="color: indianred;">
 
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" id="dissmisDelete" data-bs-dismiss="modal">Annuler</button>
-                <button type="button" class="btn btn-danger" id="confirmDelete">Supprimer</button>
-            </div>
-        </div>
-    </div>
-</div>--}}
 <!-- Modal -->
 <script type="text/javascript">
 
@@ -672,6 +656,21 @@
 
         $('#recherche').on('keyup', function () {
             let recherche = $(this).val();
+            const filtre = recherche.toLowerCase().trim();
+
+            $('.rubrique').each(function () {
+                let visible = false;
+
+                $(this).find('.permission-item').each(function () {
+                    const match = $(this).text().toLowerCase().includes(filtre);
+                    $(this).toggle(match);
+                    visible = visible || match;
+                });
+
+                $(this).toggle(visible || filtre.length === 0);
+            });
+
+            return;
 
             if (recherche.length >= 2) {
                 $(".main-content").block();

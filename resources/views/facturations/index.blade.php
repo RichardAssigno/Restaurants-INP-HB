@@ -42,8 +42,8 @@
                             <div class="col-8">
                                 <div class="card-body text-center">
                                     <h4 class="mt-0">Nombres de repas servis : {{mb_strtoupper($transactionsoperateur->totalTransaction ?? 0)}}</h4>
-                                    <p class="mb-0 text-muted">Service en cours : {{mb_strtoupper($transactionsoperateur->libelleService ?? "")}}</p>
-                                    <p class="mb-0 text-muted">Prix : {{$transactionsoperateur->valeur ?? ""}} FCFA</p>
+                                    <p class="mb-0 text-muted">Service en cours : {{mb_strtoupper($services->libelle ?? "")}}</p>
+                                    <p class="mb-0 text-muted">Prix : {{$services->valeur ?? ""}} FCFA</p>
                                 </div>
                             </div>
                         </div>
@@ -118,17 +118,18 @@
                                     <a href="{{route("afficher.etudiants", ["id" => $cle->idEtudiant])}}" style="text-decoration: none">
                                         <div class="list-group-item list-group-item-action">
                                             <div class="media">
-                                                <img class="align-self-start mx-2 circle thumb32" src="data:{{ $cle->typePhoto ?? "" }};base64,{{ $cle->photo ?? ""}}" alt="Photo">
-
+                                                <img class="align-self-start mx-2 circle thumb32" src="{{ !empty($cle->photo) ? 'data:' . ($cle->typePhoto ?? 'image/jpeg') . ';base64,' . $cle->photo : asset('assets/img/avatar.png') }}"
+                                                    alt="Photo"
+                                                >
                                                 <div class="media-body text-truncate">
                                                     <p class="mb-1">
                                                         <strong class="text-primary">
                                                             <span class="circle bg-success circle-lg text-left"></span>
-                                                            <span>{{" ( " . $cle->totalTransactions . " ) " . $cle->matricule . " | " . $cle->nom . " " . $cle->prenoms }}</span>
+                                                            <span> @if(!is_null($cle->matricule)){{" ( " . $cle->totalTransactions . " ) " . $cle->matricule . " | " . $cle->nom . " " . $cle->prenoms }} @else {{" ( " . $cle->totalTransactions . " ) " . $cle->libelleDirection }} @endif </span>
                                                         </strong>
                                                     </p>
                                                     <p class="mb-1 text-sm">
-                                                        {{ $cle->telephone . " | Opérateur : " . $cle->nomOperateur }}
+                                                        {{ $cle->telephone ?? "" . " | Opérateur : " . $cle->nomOperateur }}
                                                     </p>
                                                 </div>
                                                 <div class="ml-auto"><small class="text-muted ml-2">{{ \Carbon\Carbon::parse($cle->dateTransaction)->format('H:i:s') }}</small></div>
@@ -148,55 +149,6 @@
                 </div>
             </div>
 
-            {{--<div class="row">
-
-                <div class="col-md-12">
-                    <!-- DATATABLE DEMO 2-->
-
-                    <div class="card">
-                        <div class="card-header">
-                        </div>
-                        <div class="card-body">
-
-                            <table class="table table-striped table-bordered w-100" id="datatable2">
-                                <thead>
-                                <tr>
-                                    <th>N°</th>
-                                    <th>Matricule</th>
-                                    <th>Nom</th>
-                                    <th>Prénoms</th>
-                                    <th>Téléphone</th>
-                                    <th>Opérateur</th>
-                                    <th>NBR Fcturation</th>
-
-                                </tr>
-                                </thead>
-                                <tbody>
-                                    @php($i = 1)
-
-                                    @if($etudiantfactureparoperateur->isNotEmpty())
-
-                                        @foreach($etudiantfactureparoperateur as $cle)
-                                            <tr>
-                                                <td>{{ $i++ }}</td>
-                                                <td>{{ $cle->matricule }}</td>
-                                                <td>{{ $cle->nom }}</td>
-                                                <td>{{ $cle->prenoms }}</td>
-                                                <td>{{ $cle->telephone }}</td>
-                                                <td>{{ $cle->nomOperateur }}</td>
-                                                <td>{{ $cle->totalTransactions }}</td>
-                                            </tr>
-                                        @endforeach
-
-                                    @endif
-                                </tbody>
-
-                            </table>
-
-                        </div>
-                    </div>
-                </div>
-            </div>--}}
         </div>
 
     </section>
@@ -294,6 +246,17 @@
 
 // Lancer la mise à jour toutes les 5 secondes (5000ms)
         setInterval(rafraichirTransactions, 5000);
+
+        if (window.Echo) {
+            window.Echo.channel('transactions')
+                .listen('.TransactionUpdated', function (event) {
+                    if (event.transactionsoperateur) {
+                        $(".mt-0").text("Nombres de repas servis : " + (event.transactionsoperateur.totalTransaction || 0).toString().toUpperCase());
+                        $(".mb-0.text-muted:first").text("Service en cours : " + (event.transactionsoperateur.libelleService || ""));
+                        $(".mb-0.text-muted:last").text("Prix : " + (event.transactionsoperateur.valeur || "") + " FCFA");
+                    }
+                });
+        }
 
 
         let video = document.getElementById("qr-video");
@@ -469,18 +432,31 @@
                     let item = `
             <div class="list-group-item list-group-item-action">
                 <div class="media">
-                    <img class="align-self-start mx-2 circle thumb32"
-                         src="data:${etu.typePhoto};base64,${etu.photo}"
-                         alt="Photo">
+                    <img
+                        class="align-self-start mx-2 circle thumb32"
+                        src="${
+                                etu.photo
+                                    ? `data:${etu.typePhoto || 'image/jpeg'};base64,${etu.photo}`
+                                    : '/assets/img/avatar.png'
+                            }"
+                        onerror="this.onerror=null;this.src='/assets/img/avatar.png';"
+                        alt="Photo"
+                    >
                     <div class="media-body text-truncate">
                         <p class="mb-1">
                             <strong class="text-primary">
                                 <span class="circle bg-success circle-lg text-left"></span>
-                                <span> ( ${etu.totalTransactions} ) ${etu.matricule} | ${etu.nom} ${etu.prenoms}</span>
+                                <span>
+                                    ${
+                                        etu.matricule
+                                            ? `( ${etu.totalTransactions} ) ${etu.matricule} | ${etu.nom} ${etu.prenoms}`
+                                            : `( ${etu.totalTransactions} ) ${etu.libelleDirection || ''}`
+                                    }
+                                </span>
                             </strong>
                         </p>
                         <p class="mb-1 text-sm">
-                             ${etu.telephone} | Opérateur : ${etu.nomOperateur}
+                             ${etu.telephone || ''} | Opérateur : ${etu.nomOperateur}
                         </p>
                     </div>
                     <div class="ml-auto">

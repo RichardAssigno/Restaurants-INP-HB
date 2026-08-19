@@ -158,8 +158,8 @@
                                             <td>{{ $i++ }}</td>
                                             <td class="nom">{{ $cle->nom }}</td>
                                             <td class="prenoms">{{ $cle->prenoms }}</td>
-                                            <td class="telephone">{{ $cle->contact }}</td>
                                             <td class="login">{{ $cle->login }}</td>
+                                            <td class="telephone">{{ $cle->contact }}</td>
                                             <td class="libelleRole">{{ $cle->name }}</td>
                                             <td class="actif">
 
@@ -314,7 +314,7 @@
                         }).then((result) => {
                             if (result.isConfirmed) {
 
-                                window.location.href = "{{--{{route('comptes.index')}}--}}";
+                                window.location.href = "{{route('comptes.index')}}";
 
                             }
                         });

@@ -7,7 +7,6 @@ use Illuminate\Support\Facades\DB;
 
 class Compte extends Model
 {
-
     protected $table = 'comptesrestaux';
 
     protected $fillable = [
@@ -26,37 +25,92 @@ class Compte extends Model
 
     ];
 
-    public static function getCompteActifParHeure($pin, $heure)
+    public static function getCompteActifParHeure($pin, $heure, bool $forUpdate = false)
+    {
+        $query = self::requeteCompteFacturable($pin)
+            ->whereRaw('? BETWEEN s.debut AND s.fin', [$heure]);
+
+        if ($forUpdate) {
+            $query->lockForUpdate();
+        }
+
+        return $query->first();
+    }
+
+   /* public static function getCompteActifParService($pin, $serviceId)
+    {
+        $query = self::requeteCompteFacturable($pin)
+            ->where('s.id', '=', $serviceId);
+
+        return $query->first();
+    }*/
+
+    public static function getCompteActifParService($pin, $serviceId)
     {
         return DB::table('comptesrestaux as cr')
+
+            ->leftJoin('etudiants as e', 'e.id', '=', 'cr.etudiants_id')
+
             ->leftJoin('carteslibres as cl', 'cl.id', '=', 'cr.carteslibres_id')
-            ->leftJoin('directions as d', 'd.id', '=', 'cl.directions_id')
-            ->join('typescomptes as tc', 'tc.id', '=', 'cr.typescomptes_id')
-            ->join('facturations as f', 'f.compterestaux_id', '=', 'cr.id')
-            ->join('typesfacturations as tf', 'tf.id', '=', 'f.typesFacturations_id')
-            ->join('prix as p', 'p.id', '=', 'f.prix_id')
-            ->join('services as s', 's.id', '=', 'p.services_id')
-            ->where('cr.pin', '=', $pin)
-            ->whereRaw('? BETWEEN s.debut AND s.fin', [$heure])
+
+            ->join('typescomptes as tc', function ($join) {
+                $join->on('tc.id', '=', 'cr.typescomptes_id')
+                    ->where('tc.supprimer', '=', 0);
+            })
+
+            ->join('facturations as f', function ($join) {
+                $join->on('f.compterestaux_id', '=', 'cr.id')
+                    ->where('f.supprimer', '=', 0);
+            })
+
+            ->join('typesfacturations as tf', function ($join) {
+                $join->on('tf.id', '=', 'f.typesFacturations_id')
+                    ->where('tf.supprimer', '=', 0);
+            })
+
+            ->join('prix as p', function ($join) {
+                $join->on('p.id', '=', 'f.prix_id')
+                    ->where('p.supprimer', '=', 0);
+            })
+
+            ->join('services as s', function ($join) {
+                $join->on('s.id', '=', 'p.services_id')
+                    ->where('s.supprimer', '=', 0);
+            })
+
+            ->where('cr.supprimer', '=', 0)
+            ->where('cr.pin', '=', trim($pin))
+            ->where('s.id', '=', $serviceId)
+
             ->select(
+                'e.id as idEtudiant',
+                'e.nom',
+                'e.prenoms',
+                'e.matricule',
+
                 'cr.id as idCompte',
                 'cr.pin',
                 'cr.solde',
                 'cr.actif',
                 'cr.traques',
+
                 'cl.id as idCarte',
                 'cl.libelle as libelleCarte',
                 'cl.capacite',
                 'cl.dateDebut',
                 'cl.nombreJours',
-                'd.libelle as libelleDirection',
+
                 'tc.libelle as libelleTypeCompte',
+
                 'f.id as idFacturation',
+
                 'tf.libelle as libelleTypeFacturation',
                 'tf.codeTypeFacturations',
                 'tf.modeRechargement',
+
                 'p.id as idPrix',
                 'p.valeur',
+
                 's.id as idService',
                 's.codeService',
                 's.libelle as libelleService',
@@ -67,45 +121,61 @@ class Compte extends Model
                 's.congesDebut',
                 's.congesFin'
             )
-            ->first(); // ou ->get() si tu veux plusieurs résultats
+
+            ->first();
     }
 
-
-    public static function getInfosTransactionsTousOperateurs($heure)
+    public static function getInfosTransactionsTousOperateurs($operateurId, $serviceId)
     {
-        return DB::table('operateurs as o')
+        return DB::table('transactions as t')
+            ->join('operateurs as o', 'o.id', '=', 't.operateurs_id')
+
+            ->join('operateursprestataires as op', 'op.operateurs_id', '=', 'o.id')
+
+            ->join('prestataires as p', 'p.id', '=', 'op.prestataires_id')
+
+            ->join('prix as pr', 'pr.id', '=', 't.prix_id')
+
+            ->join('services as s', 's.id', '=', 'pr.services_id')
+
+            ->join('comptesrestaux as cr', 'cr.id', '=', 't.comptesrestaux_id')
+
+            ->leftjoin('etudiants as e', 'e.id', '=', 'cr.etudiants_id')
+
+            ->where('s.id', '=', $serviceId)
+            ->where('o.id', '=', $operateurId)
+            ->whereDate('t.created_at', '=', date('Y-m-d'))
+
             ->select(
                 'o.id as idOperateur',
                 'o.nom as nomOperateur',
                 DB::raw('COALESCE(COUNT(t.id), 0) as totalTransaction'),
-                'p.valeur',
                 's.id as idService',
                 's.codeService',
-                's.libelle as libelleService'
+                's.libelle as libelleService',
+                "pr.valeur"
             )
-            ->join('prix as p', function ($join) {
-                $join->where('p.supprimer', '=', 0);
-            })
-            ->join('services as s', function ($join) {
-                $join->on('s.id', '=', 'p.services_id')
-                    ->where('s.supprimer', '=', 0);
-            })
-            ->leftJoin('transactions as t', function ($join) use ($heure) {
-                $join->on('t.prix_id', '=', 'p.id')
-                    ->whereDate('t.created_at', now());
-            })
-            ->whereRaw('? BETWEEN s.debut AND s.fin', [$heure])
-            ->groupBy('o.id', 'p.valeur', 's.id', 's.codeService', 's.libelle')
+
+            ->groupBy(
+                'o.id',
+                'o.nom',
+                's.id',
+                's.codeService',
+                's.libelle'
+            )
+
             ->first();
     }
 
-
-    public static function getEtudiantsOperateurDuJour($idOperateur, $heure)
+    public static function getEtudiantsOperateurDuJour($idOperateur, $serviceId = null)
     {
-        return DB::table('operateurs as o')
+        $dateJour = date('Y-m-d');
+        $query = DB::table('operateurs as o')
             ->join('transactions as t', 't.operateurs_id', '=', 'o.id')
             ->join('comptesrestaux as cr', 'cr.id', '=', 't.comptesrestaux_id')
-            ->join('etudiants as e', 'e.id', '=', 'cr.etudiants_id')
+            ->leftjoin('carteslibres as cl', 'cl.id', '=', 'cr.carteslibres_id')
+            ->leftjoin('directions as dr', 'dr.id', '=', 'cl.directions_id')
+            ->leftjoin('etudiants as e', 'e.id', '=', 'cr.etudiants_id')
             ->leftJoin('photos as ph', 'ph.etudiants_id', '=', 'e.id')
             ->join('prix as p', function ($join) {
                 $join->on('p.id', '=', 't.prix_id')
@@ -116,7 +186,11 @@ class Compte extends Model
                     ->where('s.supprimer', '=', 0);
             })
             ->where('o.id', '=', $idOperateur)
-            ->whereRaw('? BETWEEN s.debut AND s.fin', [$heure])
+            ->when($serviceId, function ($query) use ($serviceId) {
+                $query->where('s.id', '=', $serviceId);
+            }, function ($query) use ($dateJour) {
+                $query->whereRaw('? BETWEEN s.debut AND s.fin', [$dateJour]);
+            })
             ->whereDate('t.created_at', now()) // équivalent DATE(t.created_at) = CURDATE()
             ->select(
                 'e.nom',
@@ -128,24 +202,33 @@ class Compte extends Model
                 't.created_at as dateTransaction',
                 DB::raw('TO_BASE64(ph.photo) as photo'),
                 'ph.typePhoto',
-                DB::raw('COUNT(t.id) as totalTransactions') // 👈 nombre de transactions par étudiant
+                DB::raw('COUNT(t.id) as totalTransactions'), // 👈 nombre de transactions par étudiant
+                "dr.libelle as libelleDirection"
             )
             ->orderBy('t.created_at', 'desc')
-            ->groupBy('e.nom', 'e.matricule', 'e.prenoms', 'e.telephone', 'o.nom')
-            ->get();
+            ->groupBy('e.nom', 'e.matricule', 'e.prenoms', 'e.telephone', 'o.nom');
+
+        return $query->get();
     }
 
     public static function getComptesRestaux()
     {
+        $facturationParCompte = DB::table('facturations as f')
+            ->where('f.supprimer', '=', 0)
+            ->select(
+                'f.compterestaux_id',
+                DB::raw('MIN(f.typesFacturations_id) as typesFacturations_id')
+            )
+            ->groupBy('f.compterestaux_id');
+
         return DB::table('comptesrestaux as cr')
             ->join('etudiants as e', 'e.id', '=', 'cr.etudiants_id')
             ->join('typescomptes as tc', function ($join) {
                 $join->on('tc.id', '=', 'cr.typescomptes_id')
                     ->where('tc.supprimer', '=', 0);
             })
-            ->join('facturations as f', function ($join) {
-                $join->on('f.compterestaux_id', '=', 'cr.id')
-                    ->where('f.supprimer', '=', 0);
+            ->joinSub($facturationParCompte, 'f', function ($join) {
+                $join->on('f.compterestaux_id', '=', 'cr.id');
             })
             ->join('typesfacturations as tf', function ($join) {
                 $join->on('tf.id', '=', 'f.typesFacturations_id')
@@ -166,18 +249,13 @@ class Compte extends Model
                 'e.nom',
                 'e.prenoms',
                 'tc.libelle as libelleTypeCompte',
+                'tf.id as idTypeFacturation',
                 'tf.libelle as libelleTypeFacturation',
+                'tf.modeRechargement',
                 'cl.id as idCarteLibre',
                 'cl.libelle as libelleCarteLibre',
                 'd.libelle as libelleDirection'
             )
-            ->groupBy('cr.id')
             ->get();
     }
-
-
-
-
-
-
 }

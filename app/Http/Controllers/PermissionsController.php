@@ -4,35 +4,38 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 use Spatie\Permission\Models\Permission;
 
 class PermissionsController extends Controller
 {
+    private const GUARD = 'operateur';
 
     public function index()
     {
 
         return view('utilisateurs.permissions.index', [
 
-            "permissions" => Permission::query()->where("guard_name" , "=", "operateur")->orderBy("name", "asc")->get()
+            'permissions' => Permission::query()->where('guard_name', '=', self::GUARD)->orderBy('name', 'asc')->get(),
 
         ]);
 
     }
 
-    public function ajouter(Request $request){
+    public function ajouter(Request $request)
+    {
 
         $validator = Validator::make($request->all(), [
 
             'libelle' => [
                 'required',
                 'string',
-                'unique:permissions,name'
-            ]
+                Rule::unique('permissions', 'name')->where('guard_name', self::GUARD),
+            ],
         ], [
 
-            "libelle.required" => "Veillez entrer un nom pour votre autorisation",
-            "libelle.unique" => "Cette Autorisations existe déjà dans la base de donnée",
+            'libelle.required' => 'Veillez entrer un nom pour votre autorisation',
+            'libelle.unique' => 'Cette Autorisations existe déjà dans la base de donnée',
 
         ]);
 
@@ -41,34 +44,43 @@ class PermissionsController extends Controller
         }
 
         Permission::create([
-            'name' => $request->libelle
+            'name' => $request->libelle,
+            'guard_name' => self::GUARD,
         ]);
 
         return response()->json([
-            'success' => "Enregistrement effectué avec succès"
+            'success' => 'Enregistrement effectué avec succès',
         ], 200);
-
 
     }
 
-    public function recuperer($id){
+    public function recuperer($id)
+    {
 
-        $permission = Permission::query()->findOrFail($id);
+        $permission = Permission::query()->where('guard_name', self::GUARD)->findOrFail($id);
+
         return response()->json($permission);
 
     }
 
-    public function modifier(Request $request){
+    public function modifier(Request $request)
+    {
 
         $validator = Validator::make($request->all(), [
 
-            'libelle' => ['required', 'string'],
-            'id' => ['required']
+            'libelle' => [
+                'required',
+                'string',
+                Rule::unique('permissions', 'name')
+                    ->where('guard_name', self::GUARD)
+                    ->ignore($request->id),
+            ],
+            'id' => ['required'],
 
         ], [
 
-            "libelle.required" => "Veillez entrer un nom pour votre autorisation",
-            "libelle.unique" => "Cette Autorisations existe déjà dans la base de donnée",
+            'libelle.required' => 'Veillez entrer un nom pour votre autorisation',
+            'libelle.unique' => 'Cette Autorisations existe déjà dans la base de donnée',
 
         ]);
 
@@ -78,10 +90,10 @@ class PermissionsController extends Controller
 
         $data = $validator->validate();
 
-        $permission = Permission::query()->findOrFail($data['id']);
+        $permission = Permission::query()->where('guard_name', self::GUARD)->findOrFail($data['id']);
 
         $dataPermission = [
-            "name" => $data['libelle'],
+            'name' => $data['libelle'],
         ];
 
         $permission->update($dataPermission);
@@ -89,18 +101,18 @@ class PermissionsController extends Controller
         return response()->json([
             'status' => 'success',
             'message' => 'Permission modifiée avec succès',
-            'permission' => $permission
+            'permission' => $permission,
         ]);
 
     }
 
-    public function supprimer($id){
+    public function supprimer($id)
+    {
 
-        $permission = Permission::query()->findOrFail($id);
+        $permission = Permission::query()->where('guard_name', self::GUARD)->findOrFail($id);
 
         $permission->delete();
 
         return response()->json(['message' => 'Entrée supprimée avec succès']);
     }
-
 }

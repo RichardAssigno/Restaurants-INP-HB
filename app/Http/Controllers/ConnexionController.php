@@ -6,17 +6,11 @@ use App\Models\Loginimages;
 use App\Models\Logintextes;
 use App\Models\Operateur;
 use Illuminate\Http\Request;
-
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
-
-use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Facades\Validator;
-
 
 class ConnexionController extends Controller
 {
-
     public function index()
     {
 
@@ -41,7 +35,6 @@ class ConnexionController extends Controller
             'password.min' => 'Il faut au moins 8 caractères pour le mot de passe',
         ]);
 
-
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
         }
@@ -50,34 +43,43 @@ class ConnexionController extends Controller
 
         $operateur = Operateur::query()->where('login', '=', $data['login'])->first();
 
-        if ($operateur->actif === 1){
+        if (! is_null($operateur)) {
 
-            $credentials = $request->only('login', 'password');
+            if ($operateur->actif === 1) {
 
-            $remember = $request->filled('remember');
+                $credentials = $request->only('login', 'password');
 
-            if (Auth::guard('operateur')->attempt($credentials)) {
+                $remember = $request->filled('remember');
 
-                $request->session()->regenerate();
+                if (Auth::guard('operateur')->attempt($credentials, $remember)) {
 
-                $redirectUrl = redirect()->intended(route('tableaudebord.index'))->getTargetUrl();
+                    $request->session()->regenerate();
+
+                    $redirectUrl = redirect()->intended(route('tableaudebord.index'))->getTargetUrl();
+
+                    return response()->json([
+                        'success' => 'Connexion réussie',
+                        'redirect' => $redirectUrl,
+                    ]);
+                }
 
                 return response()->json([
-                    'success' => 'Connexion réussie',
-                    'redirect' => $redirectUrl
-                ]);
+                    'success' => false,
+                    'message' => 'Identifiants incorrects',
+                ], 422);
+
             }
 
             return response()->json([
                 'success' => false,
-                'message' => 'Identifiants incorrects'
+                'message' => 'Votre compte n\'est pas activé. Veillez contacter le service informatique.',
             ], 422);
 
         }
 
         return response()->json([
             'success' => false,
-            'message' => 'Votre compte n\'est pas activé. Veillez contacter le service informatique.'
+            'message' => 'Veuillez vérifier vos informations de connexion',
         ], 422);
 
     }
@@ -85,13 +87,12 @@ class ConnexionController extends Controller
     public function logout(Request $request)
     {
 
-        Auth::logout();
+        Auth::guard('operateur')->logout();
 
         $request->session()->invalidate();
 
         $request->session()->regenerateToken();
 
-        return redirect()->route("login");
+        return redirect()->route('login');
     }
-
 }

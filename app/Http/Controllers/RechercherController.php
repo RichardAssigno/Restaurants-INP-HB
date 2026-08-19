@@ -27,7 +27,7 @@ class RechercherController extends Controller
 
         $etudiant = Etudiant::getEtudiantAvecPhoto($id);
 
-        if (!is_null($etudiant)) {
+        if (is_null($etudiant)) {
 
             $infostransactions = Transaction::dernieresTransactions($etudiant->idCompte);
 

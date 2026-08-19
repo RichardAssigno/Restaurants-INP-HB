@@ -127,25 +127,21 @@ class Transaction extends Model
             ->first();
     }
 
-    public static function transactioncartelibre($compteId, $codeService)
+    public static function compteNonFacturable($compteId, $serviceId)
     {
-        return static::query()
-            ->select(
-                't.*',
-                'p.valeur as prix_valeur',
-                's.libelle as service_libelle',
-                's.codeService as service_code'
-            )
-            ->from('transactions as t')
-            ->join('comptesrestaux as cr', 'cr.id', '=', 't.comptesrestaux_id')
-            ->join('carteslibres as cl', 'cl.id', '=', 'cr.carteslibres_id')
-            ->join('directions as d', 'd.id', '=', 'cl.directions_id')
-            ->join('prix as p', 'p.id', '=', 't.prix_id')
-            ->join('services as s', 's.id', '=', 'p.services_id')
-            ->where('t.comptesrestaux_id', '=', $compteId)
-            ->where('s.codeService', '=', $codeService)
-            ->whereDate('t.created_at', now()) // équivalent de DATE(t.created_at) = CURDATE()
-            ->get();
+        $nombreFacturation = DB::table('comptesrestaux as cr')
+            ->leftJoin('transactions as t', function ($join) {
+                $join->on('t.comptesrestaux_id', '=', 'cr.id')
+                    ->whereDate('t.created_at', date('Y-m-d'));
+            })
+            ->leftJoin('prix as p', function ($join) use ($serviceId) {
+                $join->on('p.id', '=', 't.prix_id')
+                    ->where('p.services_id', '=', $serviceId);
+            })
+            ->where('cr.id', '=', $compteId)
+            ->selectRaw('cr.capacite - COUNT(p.id) AS restant')
+            ->value('restant');
+        return $nombreFacturation == 0 ?? false;
     }
 
     public static function totalServicesParMois($mois, $idPrestataire)

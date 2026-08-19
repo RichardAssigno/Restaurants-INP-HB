@@ -4,18 +4,21 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
 class RolesController extends Controller
 {
+    private const GUARD = 'operateur';
 
-    public function index(){
+    public function index()
+    {
 
         return view('utilisateurs.roles.index', [
 
-            "roles" => Role::query()->where("guard_name", "=", "operateur")->orderBy('name', 'asc')->get(),
-            "title" => "Mes roles",
+            'roles' => Role::query()->where('guard_name', '=', self::GUARD)->orderBy('name', 'asc')->get(),
+            'title' => 'Mes roles',
 
         ]);
 
@@ -23,14 +26,13 @@ class RolesController extends Controller
 
     public function ajouter(Request $request)
     {
-        //unique:roles,name
-        $role = Role::query()->where("name", "=", $request->name)->first();
-
-        $verif = ($role && $role->guard_name === "operateur") ? "unique:roles,name" : "";
-
-        $validator = Validator::make($request->all(),[
-            'name' => "required|" . $verif,
-        ],[
+        $validator = Validator::make($request->all(), [
+            'name' => [
+                'required',
+                'string',
+                Rule::unique('roles', 'name')->where('guard_name', self::GUARD),
+            ],
+        ], [
             'name.required' => 'Le nom du rôle est obligatoire.',
             'name.unique' => 'Le role doit être unique.',
         ]);
@@ -43,38 +45,51 @@ class RolesController extends Controller
 
         Role::create([
             'name' => $data['name'],
+            'guard_name' => self::GUARD,
         ]);
 
         return response()->json([
-            'success' => "Enregistrement effectué avec succès"
+            'success' => 'Enregistrement effectué avec succès',
         ], 200);
 
     }
 
-    public function recuperer($id){
+    public function recuperer($id)
+    {
 
-        $role = Role::query()->findOrFail($id);
-        return response()->json($role);
+        $role = Role::query()->where('guard_name', self::GUARD)->findOrFail($id);
 
-    }
-    public function rolestoutrecuperer(){
-
-        $role = Role::query()->where("guard_name", "=", "operateur")->orderBy('name', 'asc')->get();
         return response()->json($role);
 
     }
 
-    public function modifier(Request $request){
+    public function rolestoutrecuperer()
+    {
+
+        $role = Role::query()->where('guard_name', '=', self::GUARD)->orderBy('name', 'asc')->get();
+
+        return response()->json($role);
+
+    }
+
+    public function modifier(Request $request)
+    {
 
         $validator = Validator::make($request->all(), [
 
-            'libelle' => ['required', 'string'],
-            'id' => ['required']
+            'libelle' => [
+                'required',
+                'string',
+                Rule::unique('roles', 'name')
+                    ->where('guard_name', self::GUARD)
+                    ->ignore($request->id),
+            ],
+            'id' => ['required'],
 
         ], [
 
-            "libelle.required" => "Veillez entrer un nom pour votre autorisation",
-            "libelle.unique" => "Cette Autorisations existe déjà dans la base de donnée",
+            'libelle.required' => 'Veillez entrer un nom pour votre autorisation',
+            'libelle.unique' => 'Cette Autorisations existe déjà dans la base de donnée',
 
         ]);
 
@@ -84,10 +99,10 @@ class RolesController extends Controller
 
         $data = $validator->validate();
 
-        $role = Role::query()->findOrFail($data['id']);
+        $role = Role::query()->where('guard_name', self::GUARD)->findOrFail($data['id']);
 
         $dataRole = [
-            "name" => $data['libelle'],
+            'name' => $data['libelle'],
         ];
 
         $role->update($dataRole);
@@ -95,14 +110,15 @@ class RolesController extends Controller
         return response()->json([
             'status' => 'success',
             'message' => 'Rôle modifiée avec succès',
-            'permission' => $role
+            'permission' => $role,
         ]);
 
     }
 
-    public function supprimer($id){
+    public function supprimer($id)
+    {
 
-        $role = Role::query()->findOrFail($id);
+        $role = Role::query()->where('guard_name', self::GUARD)->findOrFail($id);
 
         $role->delete();
 
@@ -112,9 +128,9 @@ class RolesController extends Controller
     public function chargerpermissions($id)
     {
 
-        $role = Role::query()->findOrFail($id);
+        $role = Role::query()->where('guard_name', self::GUARD)->findOrFail($id);
 
-        $permissions =  Permission::query()->where("guard_name" , "=", "operateur")->orderBy("name", "asc")->get()->groupBy(function ($permission) {
+        $permissions = Permission::query()->where('guard_name', '=', self::GUARD)->orderBy('name', 'asc')->get()->groupBy(function ($permission) {
             return explode('.', $permission->name)[0]; // Rubrique = partie avant le point
         });
 
@@ -122,20 +138,26 @@ class RolesController extends Controller
 
         return response()->json([
             'grouped' => $permissions,
-            'assigned' => $rolePermissions
+            'assigned' => $rolePermissions,
         ]);
     }
 
     public function ajouterpermissions(Request $request)
     {
 
-
         $validator = Validator::make($request->all(), [
-            'permissions' => ['required', 'array'],
-            'role_id' => ['required']
+            'permissions' => ['sometimes', 'array'],
+            'permissions.*' => [
+                'string',
+                Rule::exists('permissions', 'name')->where('guard_name', self::GUARD),
+            ],
+            'role_id' => [
+                'required',
+                Rule::exists('roles', 'id')->where('guard_name', self::GUARD),
+            ],
         ], [
-            "permissions.required" => "Veuillez cocher des permissions pour votre rôle",
-            "permissions.array" => "Les permissions doivent être un tableau",
+            'permissions.required' => 'Veuillez cocher des permissions pour votre rôle',
+            'permissions.array' => 'Les permissions doivent être un tableau',
         ]);
 
         if ($validator->fails()) {
@@ -144,10 +166,10 @@ class RolesController extends Controller
 
         $data = $validator->validate();
 
-        $role = Role::findOrFail($data['role_id']);
+        $role = Role::query()->where('guard_name', self::GUARD)->findOrFail($data['role_id']);
 
         $existingPermissions = $role->permissions->pluck('name')->toArray();
-        $newPermissions = $data['permissions'];
+        $newPermissions = $data['permissions'] ?? [];
 
         // Tri pour comparaison
         sort($existingPermissions);
@@ -156,14 +178,15 @@ class RolesController extends Controller
         if ($existingPermissions === $newPermissions) {
             return response()->json([
                 'errors' => [
-                    'global' => ['Pas de modification effectuée']
-                ]
+                    'global' => ['Pas de modification effectuée'],
+                ],
             ], 422);
         }
 
         // Si on a retiré des permissions → reset + assignation
         if (count($newPermissions) < count($existingPermissions)) {
             $role->syncPermissions($newPermissions);
+
             return response()->json(['message' => 'Permissions mises à jour (modification détectée)']);
         }
 
@@ -172,13 +195,14 @@ class RolesController extends Controller
 
         if (count($permissionsToAdd)) {
             $role->givePermissionTo($permissionsToAdd);
+
             return response()->json(['message' => 'Nouvelles autorisations ajoutées avec succès']);
         }
 
         return response()->json([
             'errors' => [
-                'global' => ['Pas de modification effectuée']
-            ]
+                'global' => ['Pas de modification effectuée'],
+            ],
         ], 422);
 
     }
@@ -189,8 +213,8 @@ class RolesController extends Controller
         $validator = Validator::make($request->all(), [
             'recherche' => ['required', 'string'],
         ], [
-            "recherche.required" => "Le champ recherche est obligatoire",
-            "recherche.string" => "La recherche doit être de type chaîne de caractère",
+            'recherche.required' => 'Le champ recherche est obligatoire',
+            'recherche.string' => 'La recherche doit être de type chaîne de caractère',
         ]);
 
         if ($validator->fails()) {
@@ -199,10 +223,14 @@ class RolesController extends Controller
 
         $data = $validator->validate();
 
-        $candidats = Candidat::rechercherRendezvousdunCandidat($data['recherche']);
+        $permissions = Permission::query()
+            ->where('guard_name', self::GUARD)
+            ->where('name', 'like', '%'.$data['recherche'].'%')
+            ->orderBy('name')
+            ->limit(25)
+            ->get();
 
-        return response()->json(['candidats' => $candidats]);
+        return response()->json(['permissions' => $permissions]);
 
     }
-
 }
