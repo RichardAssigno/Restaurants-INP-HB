@@ -99,6 +99,8 @@ class Compte extends Model
                 'cl.capacite',
                 'cl.dateDebut',
                 'cl.nombreJours',
+                'cl.actif as actifCarteLibre',
+                'cl.supprimer as carteLibreSupprimee',
 
                 'tc.libelle as libelleTypeCompte',
 

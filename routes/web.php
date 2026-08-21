@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ComptesController;
 use App\Http\Controllers\ComptesRestauxController;
+use App\Http\Controllers\CarteLibreController;
 use App\Http\Controllers\ConnexionController;
 use App\Http\Controllers\FacturationController;
 use App\Http\Controllers\PermissionsController;
@@ -48,6 +49,16 @@ Route::middleware('auth:operateur')->group(function () {
         Route::get('/Permissions-Recuperer/{id}', [PermissionsController::class, 'recuperer'])->name('permissions.permissionsrecuperer');
         Route::post('/Permissions-Modifier', [PermissionsController::class, 'modifier'])->name('permissions.modifier');
         Route::delete('/Supprimer-Permission/{id}', [PermissionsController::class, 'supprimer'])->name('permissions.supprimer');
+    });
+
+    Route::prefix('cartes-libres')->name('cartes-libres.')->group(function () {
+        Route::get('/', [CarteLibreController::class, 'index'])->name('index');
+        Route::get('/donnees', [CarteLibreController::class, 'data'])->name('data');
+        Route::post('/', [CarteLibreController::class, 'store'])->name('store');
+        Route::get('/{carteLibre}', [CarteLibreController::class, 'show'])->name('show');
+        Route::put('/{carteLibre}', [CarteLibreController::class, 'update'])->name('update');
+        Route::patch('/{carteLibre}/statut', [CarteLibreController::class, 'toggleStatus'])->name('status');
+        Route::delete('/{carteLibre}', [CarteLibreController::class, 'destroy'])->name('destroy');
     });
 
     Route::middleware('permission:Utilisateurs.Voir les Administrateurs')->group(function () {

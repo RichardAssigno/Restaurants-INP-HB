@@ -37,7 +37,7 @@
 
                 </li>
 
-                @canany(['Utilisateurs.Voir les Administrateurs', 'Utilisateurs.Voir les Permissions', 'Utilisateurs.Voir les Roles'])
+                @canany(['Utilisateurs.Voir les Administrateurs', 'Utilisateurs.Voir les Permissions', 'Utilisateurs.Voir les Roles', 'free-cards.viewAny'])
                     <li class=" "><a href="#user" title="Utilisateurs" data-toggle="collapse">
                             <em class="icon-user"></em><span data-localize="sidebar.nav.USERS">Utilisateurs</span>
                         </a>
@@ -54,6 +54,11 @@
                             @endcan
                             @can("Utilisateurs.Voir les Administrateurs")
                                 <li class=" "><a href="{{route("compterestau.index")}}" title="comptes restaurant"><span>Comptes restaurant</span></a></li>
+                            @endcan
+                            @can('free-cards.viewAny')
+                                <li class="{{ request()->routeIs('cartes-libres.*') ? 'active' : '' }}">
+                                    <a href="{{ route('cartes-libres.index') }}" title="Cartes libres"><span>Cartes libres</span></a>
+                                </li>
                             @endcan
                         </ul>
                     </li>

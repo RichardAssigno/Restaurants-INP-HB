@@ -104,6 +104,13 @@ class FacturationController extends Controller
             }
 
             if (! is_null($compte->idCarte) ) {
+                if ((int) $compte->actifCarteLibre !== 1 || (int) $compte->carteLibreSupprimee !== 0) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => "Cette carte libre n'est pas active. Veuillez contacter le service informatique.",
+                    ], 422);
+                }
+
                 // Vérifier si la carte n'est pas expiré
                 $dateDebut = Carbon::parse($compte->dateDebut);
                 $dateFin = $dateDebut->copy()->addDays((int) $compte->nombreJours);
