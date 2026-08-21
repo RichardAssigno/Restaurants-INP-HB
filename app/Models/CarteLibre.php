@@ -21,7 +21,6 @@ class CarteLibre extends Model
         'capacite',
         'dateDebut',
         'nombreJours',
-        'actif',
         'userAdd',
         'userUpdate',
         'userDelete',
@@ -34,7 +33,6 @@ class CarteLibre extends Model
         return [
             'capacite' => 'integer',
             'nombreJours' => 'integer',
-            'actif' => 'boolean',
             'supprimer' => 'boolean',
             'deleted_at' => 'datetime',
         ];

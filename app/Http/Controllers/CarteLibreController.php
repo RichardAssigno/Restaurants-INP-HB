@@ -51,7 +51,6 @@ class CarteLibreController extends Controller
                 'capacite' => $carteLibre->capacite,
                 'date_debut' => $carteLibre->dateDebutPourFormulaire(),
                 'nombre_jours' => $carteLibre->nombreJours,
-                'actif' => $carteLibre->actif,
             ],
         ]);
     }
@@ -61,14 +60,13 @@ class CarteLibreController extends Controller
         $carteLibre = DB::transaction(function () use ($request) {
             return CarteLibre::query()->create([
                 ...$request->validated(),
-                'actif' => true,
                 'supprimer' => false,
                 'userAdd' => Auth::guard('operateur')->id(),
             ]);
         });
 
         return response()->json([
-            'message' => 'La carte libre a été créée et activée avec succès.',
+            'message' => 'La carte libre a été créée avec succès.',
             'data' => ['id' => $carteLibre->id],
         ], 201);
     }
@@ -96,13 +94,32 @@ class CarteLibreController extends Controller
                 ->lockForUpdate()
                 ->firstOrFail();
 
-            $lockedCard->update([
-                'actif' => ! $lockedCard->actif,
-                'userUpdate' => Auth::guard('operateur')->id(),
-            ]);
+            $accounts = $lockedCard->comptes()
+                ->where('supprimer', false)
+                ->lockForUpdate()
+                ->get(['id', 'actif']);
 
-            return $lockedCard->actif;
+            if ($accounts->isEmpty()) {
+                return null;
+            }
+
+            $newStatus = ! $accounts->contains(fn ($account) => (bool) $account->actif);
+
+            $lockedCard->comptes()
+                ->where('supprimer', false)
+                ->update([
+                    'actif' => $newStatus,
+                    'userUpdate' => Auth::guard('operateur')->id(),
+                ]);
+
+            return $newStatus;
         });
+
+        if ($active === null) {
+            return response()->json([
+                'message' => "Cette carte libre n'est liée à aucun compte restaurant et ne peut pas être activée.",
+            ], 422);
+        }
 
         return response()->json([
             'message' => $active
@@ -128,7 +145,6 @@ class CarteLibreController extends Controller
             }
 
             $lockedCard->update([
-                'actif' => false,
                 'supprimer' => true,
                 'userDelete' => Auth::guard('operateur')->id(),
                 'deleted_at' => now(),

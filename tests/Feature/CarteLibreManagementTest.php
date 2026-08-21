@@ -63,7 +63,23 @@ class CarteLibreManagementTest extends TestCase
     public function test_authorized_operator_can_view_the_module_and_its_data(): void
     {
         $this->grant(CarteLibrePolicy::VIEW_ANY);
-        DB::table('carteslibres')->insert($this->cardData());
+        $cardId = DB::table('carteslibres')->insertGetId($this->cardData());
+        DB::table('comptesrestaux')->insert([
+            [
+                'carteslibres_id' => $cardId,
+                'actif' => true,
+                'supprimer' => false,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'carteslibres_id' => $cardId,
+                'actif' => false,
+                'supprimer' => false,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+        ]);
 
         $this->actingAs($this->operateur, 'operateur')
             ->get(route('cartes-libres.index'))
@@ -74,7 +90,9 @@ class CarteLibreManagementTest extends TestCase
             ->getJson(route('cartes-libres.data'))
             ->assertOk()
             ->assertJsonPath('recordsTotal', 1)
-            ->assertJsonPath('data.0.libelle', 'Carte visiteurs');
+            ->assertJsonPath('data.0.libelle', 'Carte visiteurs')
+            ->assertJsonPath('data.0.statut', 'partial')
+            ->assertJsonPath('data.0.comptes_actifs_count', 1);
     }
 
     public function test_invalid_creation_returns_validation_errors(): void
@@ -111,7 +129,7 @@ class CarteLibreManagementTest extends TestCase
                 'nombreJours' => 30,
             ])
             ->assertCreated()
-            ->assertJsonPath('message', 'La carte libre a été créée et activée avec succès.');
+            ->assertJsonPath('message', 'La carte libre a été créée avec succès.');
 
         $cardId = $createResponse->json('data.id');
 
@@ -119,7 +137,6 @@ class CarteLibreManagementTest extends TestCase
             'id' => $cardId,
             'libelle' => 'Carte invités',
             'dateDebut' => '21-08-2026',
-            'actif' => true,
             'supprimer' => false,
         ]);
 
@@ -133,10 +150,25 @@ class CarteLibreManagementTest extends TestCase
             ])
             ->assertOk();
 
+        $accountId = DB::table('comptesrestaux')->insertGetId([
+            'carteslibres_id' => $cardId,
+            'actif' => true,
+            'supprimer' => false,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
         $this->actingAs($this->operateur, 'operateur')
             ->patchJson(route('cartes-libres.status', $cardId))
             ->assertOk()
             ->assertJsonPath('actif', false);
+
+        $this->assertDatabaseHas('comptesrestaux', [
+            'id' => $accountId,
+            'actif' => false,
+        ]);
+
+        DB::table('comptesrestaux')->where('id', $accountId)->update(['supprimer' => true]);
 
         $this->actingAs($this->operateur, 'operateur')
             ->deleteJson(route('cartes-libres.destroy', $cardId))
@@ -145,7 +177,6 @@ class CarteLibreManagementTest extends TestCase
         $this->assertDatabaseHas('carteslibres', [
             'id' => $cardId,
             'libelle' => 'Carte partenaires',
-            'actif' => false,
             'supprimer' => true,
         ]);
     }
@@ -156,6 +187,7 @@ class CarteLibreManagementTest extends TestCase
         $cardId = DB::table('carteslibres')->insertGetId($this->cardData());
         DB::table('comptesrestaux')->insert([
             'carteslibres_id' => $cardId,
+            'actif' => true,
             'supprimer' => false,
             'created_at' => now(),
             'updated_at' => now(),
@@ -189,7 +221,6 @@ class CarteLibreManagementTest extends TestCase
             'capacite' => 5,
             'dateDebut' => null,
             'nombreJours' => null,
-            'actif' => true,
             'supprimer' => false,
             'created_at' => now(),
             'updated_at' => now(),
@@ -230,7 +261,6 @@ class CarteLibreManagementTest extends TestCase
             $table->integer('capacite')->default(1);
             $table->string('dateDebut')->nullable();
             $table->integer('nombreJours')->nullable();
-            $table->boolean('actif')->default(true);
             $table->unsignedBigInteger('userAdd')->nullable();
             $table->unsignedBigInteger('userUpdate')->nullable();
             $table->unsignedBigInteger('userDelete')->nullable();
@@ -242,7 +272,9 @@ class CarteLibreManagementTest extends TestCase
         Schema::create('comptesrestaux', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('carteslibres_id')->nullable();
+            $table->boolean('actif')->default(true);
             $table->boolean('supprimer')->default(false);
+            $table->unsignedBigInteger('userUpdate')->nullable();
             $table->timestamps();
         });
 

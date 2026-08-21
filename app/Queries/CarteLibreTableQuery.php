@@ -14,6 +14,9 @@ class CarteLibreTableQuery
             ->with('direction:id,libelle,codeDirection')
             ->withCount([
                 'comptes as comptes_count' => fn ($query) => $query->where('supprimer', false),
+                'comptes as comptes_actifs_count' => fn ($query) => $query
+                    ->where('supprimer', false)
+                    ->where('actif', true),
             ])
             ->where('supprimer', false);
 
@@ -46,7 +49,8 @@ class CarteLibreTableQuery
                 $direction
             ),
             3 => $query->orderBy('capacite', $direction),
-            5 => $query->orderBy('actif', $direction),
+            5 => $query->orderBy('comptes_count', $direction),
+            6 => $query->orderBy('comptes_actifs_count', $direction),
             default => $query->orderBy('libelle'),
         };
 
@@ -61,19 +65,32 @@ class CarteLibreTableQuery
             ->offset($start)
             ->limit($length)
             ->get()
-            ->map(fn (CarteLibre $carteLibre) => [
-                'id' => $carteLibre->id,
-                'libelle' => $carteLibre->libelle,
-                'directions_id' => $carteLibre->directions_id,
-                'direction' => $carteLibre->direction?->libelle,
-                'code_direction' => $carteLibre->direction?->codeDirection,
-                'capacite' => $carteLibre->capacite,
-                'date_debut' => $carteLibre->dateDebutPourFormulaire(),
-                'date_debut_lisible' => $carteLibre->dateDebutLisible(),
-                'nombre_jours' => $carteLibre->nombreJours,
-                'actif' => $carteLibre->actif,
-                'comptes_count' => $carteLibre->comptes_count,
-            ]);
+            ->map(function (CarteLibre $carteLibre) {
+                $totalAccounts = (int) $carteLibre->comptes_count;
+                $activeAccounts = (int) $carteLibre->comptes_actifs_count;
+                $status = match (true) {
+                    $totalAccounts === 0 => 'unassigned',
+                    $activeAccounts === 0 => 'inactive',
+                    $activeAccounts < $totalAccounts => 'partial',
+                    default => 'active',
+                };
+
+                return [
+                    'id' => $carteLibre->id,
+                    'libelle' => $carteLibre->libelle,
+                    'directions_id' => $carteLibre->directions_id,
+                    'direction' => $carteLibre->direction?->libelle,
+                    'code_direction' => $carteLibre->direction?->codeDirection,
+                    'capacite' => $carteLibre->capacite,
+                    'date_debut' => $carteLibre->dateDebutPourFormulaire(),
+                    'date_debut_lisible' => $carteLibre->dateDebutLisible(),
+                    'nombre_jours' => $carteLibre->nombreJours,
+                    'actif' => $activeAccounts > 0,
+                    'statut' => $status,
+                    'comptes_count' => $totalAccounts,
+                    'comptes_actifs_count' => $activeAccounts,
+                ];
+            });
 
         return [
             'draw' => (int) ($parameters['draw'] ?? 0),

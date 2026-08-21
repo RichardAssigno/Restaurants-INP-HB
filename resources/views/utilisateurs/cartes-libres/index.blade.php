@@ -95,6 +95,11 @@
             color: #6c757d;
         }
 
+        .free-card-status.is-partial {
+            background: #fff3cd;
+            color: #856404;
+        }
+
         @media (max-width: 575.98px) {
             .free-card-header {
                 align-items: stretch;
@@ -393,15 +398,27 @@
                     }
                 },
                 {
-                    data: 'actif',
-                    render: function (data, type) {
+                    data: 'statut',
+                    render: function (data, type, row) {
                         if (type !== 'display') {
-                            return Number(data) === 1 ? 'Active' : 'Inactive';
+                            return data;
                         }
 
-                        return Number(data) === 1
-                            ? '<span class="free-card-status is-active"><em class="fa fa-check mr-1"></em>Active</span>'
-                            : '<span class="free-card-status is-inactive">Inactive</span>';
+                        const details = row.comptes_count > 0
+                            ? '<span class="free-card-meta">' + row.comptes_actifs_count + '/' + row.comptes_count + ' compte(s) actif(s)</span>'
+                            : '';
+
+                        if (data === 'active') {
+                            return '<span class="free-card-status is-active"><em class="fa fa-check mr-1"></em>Active</span>' + details;
+                        }
+                        if (data === 'partial') {
+                            return '<span class="free-card-status is-partial">Partielle</span>' + details;
+                        }
+                        if (data === 'inactive') {
+                            return '<span class="free-card-status is-inactive">Inactive</span>' + details;
+                        }
+
+                        return '<span class="free-card-status is-inactive">Sans compte</span>';
                     }
                 },
                 {
@@ -418,7 +435,7 @@
                         if (permissions.update) {
                             actions.push('<button class="btn btn-sm btn-outline-primary js-edit-free-card mr-1" type="button" data-id="' + row.id + '" title="Modifier"><em class="fa fa-pen"></em></button>');
                         }
-                        if (permissions.activate) {
+                        if (permissions.activate && Number(row.comptes_count) > 0) {
                             const active = Number(row.actif) === 1;
                             actions.push('<button class="btn btn-sm ' + (active ? 'btn-outline-warning' : 'btn-outline-success') + ' js-toggle-free-card mr-1" type="button" data-id="' + row.id + '" data-active="' + (active ? '1' : '0') + '" title="' + (active ? 'Désactiver' : 'Activer') + '"><em class="fa ' + (active ? 'fa-ban' : 'fa-check') + '"></em></button>');
                         }
@@ -517,8 +534,8 @@
                 icon: 'question',
                 title: active ? 'Désactiver cette carte ?' : 'Activer cette carte ?',
                 text: active
-                    ? "Les comptes liés ne pourront plus utiliser cette carte jusqu'à sa réactivation."
-                    : 'La carte pourra de nouveau être utilisée.',
+                    ? "Tous les comptes liés seront désactivés jusqu'à leur réactivation."
+                    : 'Tous les comptes liés seront activés.',
                 showCancelButton: true,
                 confirmButtonColor: active ? '#f0ad4e' : '#27c24c',
                 cancelButtonColor: '#6c757d',
