@@ -169,7 +169,7 @@ class ComptesController extends Controller
             ]);
         }
 
-        $telephone = $smsService->formatRecipient($operateur->contact);
+        $telephone = $smsService->formatRecipient($operateur->contact) ;
 
         if ($telephone === null) {
             return response()->json([
