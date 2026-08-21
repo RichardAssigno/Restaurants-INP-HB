@@ -103,53 +103,6 @@ class FacturationController extends Controller
                 ], 422);
             }
 
-            if (! is_null($compte->idCarte) ) {
-                if ((int) $compte->actifCarteLibre !== 1 || (int) $compte->carteLibreSupprimee !== 0) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => "Cette carte libre n'est pas active. Veuillez contacter le service informatique.",
-                    ], 422);
-                }
-
-                // Vérifier si la carte n'est pas expiré
-                $dateDebut = Carbon::parse($compte->dateDebut);
-                $dateFin = $dateDebut->copy()->addDays((int) $compte->nombreJours);
-                $aujourdhui = Carbon::now();
-
-                if ($aujourdhui->lt($dateDebut)) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => "Votre carte sera disponible a partir de $compte->dateDebut.",
-                    ], 422);
-                }
-
-
-                if (! $aujourdhui->between($dateDebut, $dateFin)) {
-                    Compte::query()
-                        ->whereKey($compte->idCompte)
-                        ->update([
-                            'actif' => 0,
-                            'userUpdate' => Auth::guard('operateur')->id(),
-                        ]);
-
-                    return response()->json([
-                        'success' => false,
-                        'message' => "Le delai d'utilisation de votre carte a ete depassé.",
-                    ], 422);
-                }
-
-                if (Transaction::compteNonFacturable($compte->idCompte, $compte->idService)) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'La limite de facturation pour ce QR Code a été atteinte pour le service en cours.',
-                    ], 422);
-                }
-
-                $transactionsoperateur = $this->insertion($compte, $trimestre->id);
-
-                return $this->reponseFacturation($transactionsoperateur);
-            }
-
             $dejaFacture = Transaction::transactionaujourdhui($compte->idCompte, $compte->codeService);
 
             if (! is_null($dejaFacture)) {
