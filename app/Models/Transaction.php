@@ -77,7 +77,8 @@ class Transaction extends Model
                 DB::raw("SUM(CASE WHEN s.codeService = 'PD' THEN 1 ELSE 0 END) as petit_dejeuner"),
                 DB::raw("SUM(CASE WHEN s.codeService = 'D' THEN 1 ELSE 0 END) as dejeuner"),
                 DB::raw("SUM(CASE WHEN s.codeService = 'DR' THEN 1 ELSE 0 END) as diner"),
-                DB::raw('COUNT(t.id) as total')
+                DB::raw('COUNT(t.id) as total'),
+                "pr.libelle as libellePrestataire",
             )
             ->whereMonth('t.created_at', $mois)
             ->whereYear('t.created_at', $annee) // ✅ ajout de l'année
