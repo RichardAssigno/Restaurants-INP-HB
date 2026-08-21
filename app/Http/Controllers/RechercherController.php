@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Compte;
 use App\Models\Etudiant;
 use App\Models\Transaction;
 use Illuminate\Http\Request;
@@ -27,7 +28,7 @@ class RechercherController extends Controller
 
         $etudiant = Etudiant::getEtudiantAvecPhoto($id);
 
-        if (is_null($etudiant)) {
+        if (!is_null($etudiant)) {
 
             $infostransactions = Transaction::dernieresTransactions($etudiant->idCompte);
 
@@ -43,6 +44,20 @@ class RechercherController extends Controller
         return redirect()->back()->with('error', 'Ce matricule n\'a pas de compte restaurant.');
 
 
+    }
+
+    public function afficherCompteLibre($id)
+    {
+        $compteLibre = Compte::getCompteLibreAvecDetails($id);
+
+        if (! is_null($compteLibre)) {
+            return view('bilansetudiants.index', [
+                'infostransactions' => Transaction::dernieresTransactions($compteLibre->idCompte),
+                'compteLibre' => $compteLibre,
+            ]);
+        }
+
+        return redirect()->back()->with('error', 'Ce compte libre n\'existe pas ou n\'est plus disponible.');
     }
 
 

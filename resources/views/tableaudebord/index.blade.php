@@ -218,36 +218,30 @@
             $('#datatable2').DataTable().destroy();
         }
 
-        $('#datatable2').DataTable({
-            dom: 'Bfrtip',
-            buttons: [
-                {
-                    text: 'PDF',
-                    className: 'btn btn-info',
-                    action: function ( e, dt, node, config ) {
-                        // Récupère la valeur du mois et de l'année sélectionnés
-                        let mois = $('#mois').val();
-                        let annee = $('#annee').val();
+        const boutonsTableauDeBord = window.restaurantDataTableButtons();
 
-                        // Vérifie que les 2 valeurs existent
-                        if (!mois || !annee) {
-                            Swal.fire("Erreur", "Veuillez sélectionner une année et un mois", "warning");
-                            return;
-                        }
+        boutonsTableauDeBord[3] = {
+            text: 'PDF',
+            className: 'btn btn-outline-secondary',
+            action: function ( e, dt, node, config ) {
+                // Récupère la valeur du mois et de l'année sélectionnés
+                let mois = $('#mois').val();
+                let annee = $('#annee').val();
 
-                        // Ouvre la route Laravel avec mois et année en paramètres
-                        window.open("{{ route('bilan.pdf') }}?mois=" + mois + "&annee=" + annee, "_blank");
-                    }
-                },
-                {
-                    extend: 'excel',
-                    className: 'btn btn-success'
-                },
-                {
-                    extend: 'copy',
-                    className: 'btn btn-primary'
+                // Vérifie que les 2 valeurs existent
+                if (!mois || !annee) {
+                    Swal.fire("Erreur", "Veuillez sélectionner une année et un mois", "warning");
+                    return;
                 }
-            ]
+
+                // Conserve l'export PDF existant via la route Laravel.
+                window.open("{{ route('bilan.pdf') }}?mois=" + mois + "&annee=" + annee, "_blank");
+            }
+        };
+
+        $('#datatable2').DataTable({
+            dom: window.restaurantDataTableDom,
+            buttons: boutonsTableauDeBord
         });
 
 

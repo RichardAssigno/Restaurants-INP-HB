@@ -44,7 +44,7 @@
                         <ul class="sidebar-nav sidebar-subnav collapse " id="user">
                             <li class="sidebar-subnav-header">Utilisateurs</li>
                                 @can("Utilisateurs.Voir les Administrateurs")
-                                <li class=" "><a href="{{route("comptes.index")}}" title="aministrateurs"><span data-localize="sidebar.nav.ADMINS">Aministrateurs</span></a></li>
+                                <li class=" "><a href="{{route("comptes.index")}}" title="Administrateurs"><span data-localize="sidebar.nav.ADMINS">Administrateurs</span></a></li>
                             @endcan
                             @can("Utilisateurs.Voir les Roles")
                                 <li class=" "><a href="{{route("roles.index")}}" title="roles"><span data-localize="sidebar.nav.ROLES">Roles</span></a></li>

@@ -23,6 +23,9 @@ Route::middleware('auth:operateur')->group(function () {
 
     Route::get('/search', [RechercherController::class, 'rechercher'])->name('rechercher.etudiants');
     Route::get('/search/affiche-etudiant/{id?}', [RechercherController::class, 'afficher'])->name('afficher.etudiants');
+    Route::get('/search/affiche-compte-libre/{id}', [RechercherController::class, 'afficherCompteLibre'])
+        ->whereNumber('id')
+        ->name('afficher.comptes-libres');
 
     Route::middleware('permission:Utilisateurs.Voir les Roles')->group(function () {
         Route::get('/Roles', [RolesController::class, 'index'])->name('roles.index');
@@ -49,11 +52,13 @@ Route::middleware('auth:operateur')->group(function () {
 
     Route::middleware('permission:Utilisateurs.Voir les Administrateurs')->group(function () {
         Route::get('/comptes', [ComptesController::class, 'index'])->name('comptes.index');
+        Route::get('/comptes/donnees', [ComptesController::class, 'donnees'])->name('comptes.donnees');
         Route::post('/Ajouter-Comptes', [ComptesController::class, 'ajouter'])->name('comptes.ajouter');
-        Route::post('/Modifier-Comptes', [ComptesController::class, 'modifier'])->name('comptes.modifier');
-        Route::delete('/comptes-supprimer/{id}', [ComptesController::class, 'supprimer'])->name('comptes.supprimer');
-        Route::get('/desactiver-compte/{id}', [ComptesController::class, 'desactiver'])->name('comptes.desactiver');
-        Route::get('/activer-compte/{id}', [ComptesController::class, 'activer'])->name('comptes.activer');
+        Route::get('/comptes/{id}', [ComptesController::class, 'recuperer'])->name('comptes.recuperer');
+        Route::put('/comptes/{id}', [ComptesController::class, 'modifier'])->name('comptes.modifier');
+        Route::patch('/comptes/{id}/mot-de-passe', [ComptesController::class, 'reinitialiserMotDePasse'])->name('comptes.mot-de-passe');
+        Route::patch('/comptes/{id}/statut', [ComptesController::class, 'basculerStatut'])->name('comptes.statut');
+        Route::delete('/comptes/{id}', [ComptesController::class, 'supprimer'])->name('comptes.supprimer');
 
         Route::get('/compte-restaurant', [ComptesRestauxController::class, 'index'])->name('compterestau.index');
         Route::post('/ajouter-compte-restaurant', [ComptesRestauxController::class, 'ajouter'])->name('compterestau.ajouter');

@@ -7,6 +7,7 @@
 
     @include('layouts.css')
     @include('layouts.css-summernote')
+    @include('layouts.datatablescss')
 
     <!-- CSS de Summernote -->
     <!-- add summernote -->
@@ -174,7 +175,7 @@
                                                         </div>
                                                     </a>
                                                 @endcan
-                                                @can('Action Loginomage')
+                                                @can('Action Loginimage')
                                                     <a href="#" data-id="{{$liste->id}}" data-name="{{ $liste->id }}"
                                                        class="activer-desactiver">
                                                         @if($liste->statut == 1)
@@ -219,6 +220,7 @@
 
 @include('layouts.js')
 @include('layouts.js-summernote')
+@include('layouts.datatablesjs')
 
 <script type="text/javascript">
 

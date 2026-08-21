@@ -35,4 +35,11 @@ return [
         ],
     ],
 
+    'sms' => [
+        'url' => env('SMS_API_URL', 'https://sms4u.2facebusiness.com/api/api_http.php'),
+        'username' => env('SMS_API_USERNAME', 'INPHB'),
+        'password' => env('SMS_API_PASSWORD', '6z7Hqe5H3VBg5i'),
+        'sender' => env('SMS_API_SENDER', 'INPHB'),
+    ],
+
 ];

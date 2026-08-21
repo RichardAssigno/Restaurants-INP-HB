@@ -7,6 +7,7 @@
 
     @include('layouts.css')
     @include('layouts.css-summernote')
+    @include('layouts.datatablescss')
 
     <!-- CSS de Summernote -->
     <!-- add summernote -->
@@ -112,7 +113,7 @@
                                 <tr>
                                     <th data-priority="1">N°</th>
                                     <th>Texte</th>
-                                    @canany(['Modifier ', 'Action'])
+                                    @canany(['Modifier Logintexte', 'Action Logintexte'])
                                         <th class="sort-alpha" data-priority="2">Actions</th>
                                     @endcanany
                                 </tr>
@@ -175,6 +176,7 @@
 <!-- =============== assets SCRIPTS ===============-->
 
 @include('layouts.js')
+@include('layouts.datatablesjs')
 
 
 <script type="text/javascript">

@@ -37,13 +37,13 @@ class Compte extends Model
         return $query->first();
     }
 
-   /* public static function getCompteActifParService($pin, $serviceId)
-    {
-        $query = self::requeteCompteFacturable($pin)
-            ->where('s.id', '=', $serviceId);
+    /* public static function getCompteActifParService($pin, $serviceId)
+     {
+         $query = self::requeteCompteFacturable($pin)
+             ->where('s.id', '=', $serviceId);
 
-        return $query->first();
-    }*/
+         return $query->first();
+     }*/
 
     public static function getCompteActifParService($pin, $serviceId)
     {
@@ -130,7 +130,12 @@ class Compte extends Model
         return DB::table('transactions as t')
             ->join('operateurs as o', 'o.id', '=', 't.operateurs_id')
 
-            ->join('operateursprestataires as op', 'op.operateurs_id', '=', 'o.id')
+            ->join('operateursprestataires as op', function ($join) {
+                $join->on('op.operateurs_id', '=', 'o.id')
+                    ->where('op.supprimer', 0)
+                    ->where('op.statut', 0)
+                    ->whereNull('op.dateFin');
+            })
 
             ->join('prestataires as p', 'p.id', '=', 'op.prestataires_id')
 
@@ -153,7 +158,7 @@ class Compte extends Model
                 's.id as idService',
                 's.codeService',
                 's.libelle as libelleService',
-                "pr.valeur"
+                'pr.valeur'
             )
 
             ->groupBy(
@@ -193,22 +198,73 @@ class Compte extends Model
             })
             ->whereDate('t.created_at', now()) // équivalent DATE(t.created_at) = CURDATE()
             ->select(
+                'cr.id as idCompteRestau',
                 'e.nom',
                 'e.id as idEtudiant',
                 'e.matricule',
                 'e.prenoms',
                 'e.telephone',
                 'o.nom as nomOperateur',
-                't.created_at as dateTransaction',
-                DB::raw('TO_BASE64(ph.photo) as photo'),
-                'ph.typePhoto',
-                DB::raw('COUNT(t.id) as totalTransactions'), // 👈 nombre de transactions par étudiant
-                "dr.libelle as libelleDirection"
+                DB::raw('MAX(t.created_at) as dateTransaction'),
+                DB::raw('MAX(TO_BASE64(ph.photo)) as photo'),
+                DB::raw('MAX(ph.typePhoto) as typePhoto'),
+                DB::raw('COUNT(t.id) as totalTransactions'),
+                DB::raw('MAX(cr.capacite) as capacite'),
+                DB::raw('MAX(cl.libelle) as libelleCarteLibre'),
+                DB::raw('MAX(dr.libelle) as libelleDirection')
             )
-            ->orderBy('t.created_at', 'desc')
-            ->groupBy('e.nom', 'e.matricule', 'e.prenoms', 'e.telephone', 'o.nom');
+            ->groupBy('cr.id', 'e.id', 'e.nom', 'e.matricule', 'e.prenoms', 'e.telephone', 'o.nom')
+            ->orderByDesc('dateTransaction');
 
         return $query->get();
+    }
+
+    public static function getCompteLibreAvecDetails($idCompte)
+    {
+        return DB::table('comptesrestaux as cr')
+            ->join('carteslibres as cl', function ($join) {
+                $join->on('cl.id', '=', 'cr.carteslibres_id')
+                    ->where('cl.supprimer', '=', 0);
+            })
+            ->leftJoin('directions as d', function ($join) {
+                $join->on('d.id', '=', 'cl.directions_id')
+                    ->where('d.supprimer', '=', 0);
+            })
+            ->join('typescomptes as tc', function ($join) {
+                $join->on('tc.id', '=', 'cr.typescomptes_id')
+                    ->where('tc.supprimer', '=', 0);
+            })
+            ->join('facturations as f', function ($join) {
+                $join->on('f.compterestaux_id', '=', 'cr.id')
+                    ->where('f.supprimer', '=', 0);
+            })
+            ->join('typesfacturations as tf', function ($join) {
+                $join->on('tf.id', '=', 'f.typesFacturations_id')
+                    ->where('tf.supprimer', '=', 0);
+            })
+            ->where('cr.id', '=', $idCompte)
+            ->where('cr.supprimer', '=', 0)
+            ->whereNull('cr.etudiants_id')
+            ->whereNotNull('cr.carteslibres_id')
+            ->select(
+                'cr.id as idCompte',
+                'cr.capacite',
+                'cr.solde',
+                'cr.actif',
+                'cr.traques',
+                'cl.id as idCarteLibre',
+                'cl.libelle as libelleCarteLibre',
+                'cl.dateDebut',
+                'cl.nombreJours',
+                'd.libelle as libelleDirection',
+                'd.codeDirection',
+                'tc.libelle as libelleTypeCompte',
+                'tf.libelle as libelleTypeFacturation',
+                'tf.codeTypeFacturations',
+                'tf.modeRechargement'
+            )
+            ->orderByDesc('f.id')
+            ->first();
     }
 
     public static function getComptesRestaux()

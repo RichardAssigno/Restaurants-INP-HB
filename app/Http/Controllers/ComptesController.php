@@ -3,231 +3,259 @@
 namespace App\Http\Controllers;
 
 use App\Models\Operateur;
+use App\Models\Prestataire;
+use App\Services\SmsService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Validation\Rule;
-use Spatie\Permission\Models\Role;
+use Illuminate\Validation\Validator as ValidationValidator;
+use Illuminate\View\View;
 
 class ComptesController extends Controller
 {
-    public function index()
+    public function index(): View
     {
-
         return view('utilisateurs.comptes.index', [
-
-            'roles' => Role::query()->where('guard_name', '=', 'operateur')->orderBy('name', 'asc')->get(),
-            'operateurs' => Operateur::getOperateursAvecRoles(),
-
+            'prestataires' => Prestataire::disponiblesPourOperateurs(),
+            'roles' => Operateur::rolesDisponibles(),
         ]);
-
     }
 
-    public function ajouter(Request $request)
+    public function donnees(Request $request): JsonResponse
     {
-        $operateur = Operateur::query()->where('login', '=', $request->login)
-            ->where('contact', '=', $request->telephone)
-            ->first();
+        return response()->json(Operateur::donneesTableau($request->all()));
+    }
 
-        $verif = $operateur && $operateur->nom == mb_strtoupper($request->nom) && $operateur->prenoms == mb_strtoupper($request->prenoms) && $operateur->contact == mb_strtoupper($request->telephone);
+    public function recuperer(int $id): JsonResponse
+    {
+        $operateur = Operateur::trouverPourGestion($id);
 
-        $validator = Validator::make($request->all(), [
-            'nom' => ['required', 'string'],
-            'prenoms' => ['required', 'string'],
-            'login' => ['required', 'string', $verif ? Rule::unique('operateurs', 'login')->ignore($operateur->id) : Rule::unique('operateurs', 'login')],
-            'password' => ['required', 'string', 'min:8'],
-            'telephone' => ['required', 'string', $verif ? Rule::unique('operateurs', 'contact')->ignore($operateur->id) : Rule::unique('operateurs', 'contact')],
-            'role' => ['required', Rule::exists('roles', 'id')->where('guard_name', 'operateur')],
-        ], [
-            'nom.required' => 'Le nom est obligatoire',
-            'nom.string' => 'Le nom doit être de type chaîne de caractère',
-            'prenoms.required' => 'Le prenoms est obligatoire',
-            'prenoms.string' => 'Le prenoms doit être de type chaîne de caractère',
-            'login.required' => 'Le login est obligatoire',
-            'login.string' => 'Le login doit être de type chaîne de caractère',
-            'login.unique' => 'Ce Login est déjà utilisé.',
-            'telephone.required' => 'Le telephone est obligatoire',
-            'telephone.string' => 'Le telephone doit être de type chaîne de caractère',
-            'telephone.unique' => 'Ce numéro de telephone est déjà utilisé',
-            'role.required' => 'Veillez selectionner un role',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
+        if (! $operateur) {
+            return response()->json(['message' => "L'administrateur demandé n'existe plus."], 404);
         }
 
-        $data = $validator->validate();
+        return response()->json(['data' => $operateur]);
+    }
 
-        $role = Role::query()->where('guard_name', 'operateur')->findOrFail($data['role']);
+    public function ajouter(Request $request): JsonResponse
+    {
+        $validateur = $this->validateur($request, null, true);
 
-        if ($verif) {
-
-            $operateur->update([
-
-                'supprimer' => 0,
-                'userUpdate' => Auth::guard('operateur')->id(),
-
-            ]);
-
-            $operateur->syncRoles($role);
-
+        if ($validateur->fails()) {
             return response()->json([
-                'success' => true,
-                'message' => 'Compte ajouté avec succès',
-            ]);
-
+                'message' => 'Veuillez corriger les informations du formulaire.',
+                'errors' => $validateur->errors(),
+            ], 422);
         }
 
-        $dataOperateurs = [
-
-            'nom' => mb_strtoupper($data['nom']),
-            'prenoms' => mb_strtoupper($data['prenoms']),
-            'contact' => $data['telephone'],
-            'login' => $data['login'],
-            'password' => Hash::make($data['password']),
-            'userAdd' => Auth::guard('operateur')->id(),
-
-        ];
-
-        $operateur = Operateur::query()->create($dataOperateurs);
-
-        $operateur->syncRoles($role);
+        $operateurId = Operateur::creerAvecPrestataire(
+            $validateur->validated(),
+            Auth::guard('operateur')->id()
+        );
 
         return response()->json([
             'success' => true,
-            'message' => 'Compte ajouté avec succès',
-        ]);
-
+            'message' => "L'opérateur a été ajouté avec succès.",
+            'data' => Operateur::trouverPourGestion($operateurId),
+        ], 201);
     }
 
-    public function recuperer($id)
+    public function modifier(Request $request, int $id): JsonResponse
     {
-
-        $admin = Operateur::getOperateursAvecRoles()->firstWhere('idOperateur', (int) $id);
-
-        if (! $admin) {
-            return response()->json(['message' => 'Compte introuvable.'], 404);
+        if (! Operateur::trouverPourGestion($id)) {
+            return response()->json(['message' => "L'administrateur demandé n'existe plus."], 404);
         }
 
-        return response()->json($admin);
+        $validateur = $this->validateur($request, $id, false);
 
-    }
-
-    public function modifier(Request $request)
-    {
-
-        $validator = Validator::make($request->all(), [
-            'operateur_id' => ['required', 'integer', 'exists:operateurs,id'],
-            'nom' => ['required', 'string'],
-            'prenoms' => ['required', 'string'],
-            'login' => ['required', 'string', Rule::unique('operateurs', 'login')->ignore($request->operateur_id)],
-            'password' => ['nullable', 'string', 'min:8'], // facultatif pour update
-            'telephone' => ['required', 'string', Rule::unique('operateurs', 'contact')->ignore($request->operateur_id)],
-            'role' => ['required', Rule::exists('roles', 'id')->where('guard_name', 'operateur')],
-        ], [
-            'operateur_id.required' => "L'id de l'Admin est obligatoire",
-            'nom.required' => 'Le nom est obligatoire',
-            'nom.string' => 'Le nom doit être de type chaîne de caractère',
-            'prenoms.required' => 'Le prenoms est obligatoire',
-            'prenoms.string' => 'Le prenoms doit être de type chaîne de caractère',
-            /* "email.required" => "L'email est obligatoire",
-            "email.string" => "L'email doit être de type chaîne de caractère",
-            "email.unique" => "L'email doit être unique",*/
-            'telephone.required' => 'Le téléphone est obligatoire',
-            'telephone.string' => 'Le téléphone doit être de type chaîne de caractère',
-            'role.required' => 'Veuillez sélectionner un rôle',
-            'role.exists' => "Le rôle n'existe pas",
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
+        if ($validateur->fails()) {
+            return response()->json([
+                'message' => 'Veuillez corriger les informations du formulaire.',
+                'errors' => $validateur->errors(),
+            ], 422);
         }
 
-        $data = $validator->validate();
-
-        $role = Role::query()->where('guard_name', 'operateur')->findOrFail($data['role']);
-
-        $admin = Operateur::query()->findOrFail($data['operateur_id']);
-
-        $dataAdmin = [
-            'nom' => mb_strtoupper($data['nom']),
-            'prenoms' => mb_strtoupper($data['prenoms']),
-            'login' => $data['login'],
-            'contact' => $data['telephone'],
-            'userUpdate' => Auth::guard('operateur')->id(),
-        ];
-
-        if ($request->filled('password')) {
-            $dataAdmin['password'] = Hash::make($data['password']);
-        }
-
-        $admin->update($dataAdmin);
-
-        $admin->syncRoles($role);
+        Operateur::modifierAvecPrestataire(
+            $id,
+            $validateur->validated(),
+            Auth::guard('operateur')->id()
+        );
 
         return response()->json([
-            'status' => 'success',
-            'message' => 'Compte modifiée avec succès',
+            'message' => "L'administrateur a été modifié avec succès.",
+            'data' => Operateur::trouverPourGestion($id),
         ]);
-
     }
 
-    public function supprimer($id)
+    public function supprimer(int $id): JsonResponse
     {
-
-        $operateur = Operateur::query()->findOrFail($id);
-
-        $dataOperateur = [
-
-            'supprimer' => 1,
-            'userDelete' => Auth::guard('operateur')->id(),
-
-        ];
-
-        $operateur->update($dataOperateur);
-
-        return response()->json(['message' => 'Entrée supprimée avec succès']);
-    }
-
-    public function desactiver($id)
-    {
-
-        if (Auth::guard('operateur')->id() == $id) {
-
+        if ((int) Auth::guard('operateur')->id() === $id) {
             return response()->json([
-                'success' => false,
-                'message' => 'Vous êtes actuellement connectés à se compte, vous ne pouvez pas le désactiver',
+                'message' => 'Vous ne pouvez pas supprimer le compte actuellement connecté.',
             ], 422);
-
         }
 
-        $operateur = Operateur::query()->findOrFail($id);
+        if (! Operateur::supprimerPourGestion($id, Auth::guard('operateur')->id())) {
+            return response()->json(['message' => "L'administrateur demandé n'existe plus."], 404);
+        }
 
-        $operateur->update([
-
-            'actif' => 0,
-            'userUpdate' => Auth::guard('operateur')->id(),
-
-        ]);
-
-        return response()->json(['message' => 'Compte désactivé avec succès']);
-
+        return response()->json(['message' => "L'administrateur a été supprimé avec succès."]);
     }
 
-    public function activer($id)
+    public function basculerStatut(int $id): JsonResponse
     {
+        if ((int) Auth::guard('operateur')->id() === $id) {
+            return response()->json([
+                'message' => 'Vous ne pouvez pas désactiver le compte actuellement connecté.',
+            ], 422);
+        }
 
-        $operateur = Operateur::query()->findOrFail($id);
+        $actif = Operateur::basculerStatut($id, Auth::guard('operateur')->id());
 
-        $operateur->update([
+        if ($actif === null) {
+            return response()->json(['message' => "L'administrateur demandé n'existe plus."], 404);
+        }
 
-            'actif' => 1,
-            'userUpdate' => Auth::guard('operateur')->id(),
+        return response()->json([
+            'message' => $actif
+                ? 'Le compte administrateur a été activé avec succès.'
+                : 'Le compte administrateur a été désactivé avec succès.',
+            'actif' => $actif,
+        ]);
+    }
 
+    public function reinitialiserMotDePasse(Request $request, int $id, SmsService $smsService): JsonResponse
+    {
+        $validateur = Validator::make($request->all(), [
+            'password' => ['required', 'string', 'min:8', 'max:255', 'confirmed'],
+            'notifier_sms' => ['nullable', 'boolean'],
+        ], [
+            'password.required' => 'Le nouveau mot de passe est obligatoire.',
+            'password.min' => 'Le mot de passe doit contenir au moins 8 caractères.',
+            'password.max' => 'Le mot de passe ne doit pas dépasser 255 caractères.',
+            'password.confirmed' => 'La confirmation du mot de passe ne correspond pas.',
+            'notifier_sms.boolean' => "Le choix de notification SMS n'est pas valide.",
         ]);
 
-        return response()->json(['message' => 'Compte activé avec succès']);
+        if ($validateur->fails()) {
+            return response()->json([
+                'message' => 'Veuillez corriger les informations du formulaire.',
+                'errors' => $validateur->errors(),
+            ], 422);
+        }
 
+        $operateur = Operateur::query()
+            ->where('supprimer', 0)
+            ->find($id);
+
+        if (! $operateur) {
+            return response()->json(['message' => "L'administrateur demandé n'existe plus."], 404);
+        }
+
+        $password = $validateur->validated()['password'];
+
+        $operateur->update([
+            'password' => Hash::make($password),
+            'userUpdate' => Auth::guard('operateur')->id(),
+        ]);
+
+        if (! $request->boolean('notifier_sms')) {
+            return response()->json([
+                'message' => "Le mot de passe de l'administrateur a été réinitialisé sans notification SMS.",
+                'sms_envoye' => null,
+            ]);
+        }
+
+        $telephone = $smsService->formatRecipient($operateur->contact);
+
+        if ($telephone === null) {
+            return response()->json([
+                'message' => "Le mot de passe a été réinitialisé, mais aucun numéro de téléphone valide ne permet d'envoyer le SMS.",
+                'sms_envoye' => false,
+            ]);
+        }
+
+        $message = "Votre mot de passe administrateur a été réinitialisé. Identifiant : {$operateur->login}. Nouveau mot de passe : {$password}. Lien de connexion : ".route('login');
+
+        try {
+            $response = $smsService->send($telephone, $message);
+            $smsEnvoye = $smsService->isSuccessful($response);
+        } catch (\Throwable $exception) {
+            Log::error("L'envoi du SMS de réinitialisation administrateur a échoué.", [
+                'operateur_id' => $operateur->id,
+                'exception' => $exception->getMessage(),
+            ]);
+            $smsEnvoye = false;
+        }
+
+        return response()->json([
+            'message' => $smsEnvoye
+                ? "Le mot de passe a été réinitialisé et envoyé à l'administrateur par SMS."
+                : "Le mot de passe a été réinitialisé, mais l'envoi du SMS a échoué.",
+            'sms_envoye' => $smsEnvoye,
+        ]);
+    }
+
+    private function validateur(Request $request, ?int $id, bool $creation): ValidationValidator
+    {
+        $reglesMotDePasse = $creation
+            ? ['required', 'string', 'min:8', 'max:255', 'confirmed']
+            : ['nullable', 'string', 'min:8', 'max:255', 'confirmed'];
+
+        $validateur = Validator::make($request->all(), [
+            'nom' => ['required', 'string', 'max:255'],
+            'prenoms' => ['required', 'string', 'max:255'],
+            'login' => ['required', 'string', 'max:255', 'regex:/^[A-Za-z0-9._-]+$/'],
+            'password' => $reglesMotDePasse,
+            'contact' => ['required', 'string', 'max:255'],
+            'roles_id' => ['required', 'integer'],
+            'prestataires_id' => ['required', 'integer'],
+        ], [
+            'required' => 'Le champ :attribute est obligatoire.',
+            'login.regex' => 'Le login accepte uniquement les lettres non accentuées, chiffres, points, tirets et tirets bas.',
+            'password.min' => 'Le mot de passe doit contenir au moins 8 caractères.',
+            'password.confirmed' => 'La confirmation du mot de passe ne correspond pas.',
+            'roles_id.integer' => 'Le rôle sélectionné est invalide.',
+            'prestataires_id.integer' => 'Le prestataire sélectionné est invalide.',
+        ], [
+            'nom' => 'nom',
+            'prenoms' => 'prénoms',
+            'login' => 'login',
+            'password' => 'mot de passe',
+            'contact' => 'contact',
+            'roles_id' => 'rôle',
+            'prestataires_id' => 'prestataire',
+        ]);
+
+        $validateur->after(function (ValidationValidator $validateur) use ($request, $id) {
+            if (! $validateur->errors()->has('login')
+                && $request->filled('login')
+                && Operateur::loginExiste($request->string('login')->toString(), $id)) {
+                $validateur->errors()->add('login', 'Ce login est déjà utilisé par un administrateur.');
+            }
+
+            if (! $validateur->errors()->has('contact')
+                && $request->filled('contact')
+                && Operateur::contactExiste($request->string('contact')->toString(), $id)) {
+                $validateur->errors()->add('contact', 'Ce contact est déjà utilisé par un administrateur.');
+            }
+
+            if (! $validateur->errors()->has('prestataires_id')
+                && $request->filled('prestataires_id')
+                && ! Prestataire::existeEtActif((int) $request->input('prestataires_id'))) {
+                $validateur->errors()->add('prestataires_id', "Le prestataire sélectionné n'est pas disponible.");
+            }
+
+            if (! $validateur->errors()->has('roles_id')
+                && $request->filled('roles_id')
+                && ! Operateur::roleOperateurExiste((int) $request->input('roles_id'))) {
+                $validateur->errors()->add('roles_id', "Le rôle sélectionné n'est pas disponible.");
+            }
+        });
+
+        return $validateur;
     }
 }

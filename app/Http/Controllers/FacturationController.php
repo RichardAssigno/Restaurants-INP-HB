@@ -148,7 +148,7 @@ class FacturationController extends Controller
             if (! is_null($dejaFacture)) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Ce compte a deja ete facture pour ce service.',
+                    'message' => 'Ce compte a déjà été facturé pour ce service.',
                 ], 422);
             }
 
@@ -203,7 +203,7 @@ class FacturationController extends Controller
     {
         return response()->json([
             'success' => true,
-            'message' => 'Facturation effectuee avec succes',
+            'message' => 'Facturation effectuée avec succès',
             'transactionsoperateur' => $transactionsoperateur,
             'etudiantfactureparoperateur' => Compte::getEtudiantsOperateurDuJour(Auth::guard('operateur')->id(), $transactionsoperateur->idService ?? null
             ),

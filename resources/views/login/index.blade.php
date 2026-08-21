@@ -63,7 +63,11 @@
                         </div>
                     </div>
                     <div class="d-grid text-center">
-                        <button class="btn btn-primary" type="submit">Valider </button>
+                        <button class="btn btn-primary" id="login-submit" type="submit">
+                            <span class="spinner-border spinner-border-sm me-1 d-none" id="login-button-loader" role="status" aria-hidden="true"></span>
+                            <em class="fa fa-sign-in-alt me-1" id="login-button-icon"></em>
+                            <span id="login-button-text">Valider</span>
+                        </button>
                     </div>
 
                 </form>
@@ -99,6 +103,20 @@
         }
     });
 
+    function afficherLoaderConnexion() {
+        $('#login-submit').prop('disabled', true);
+        $('#login-button-loader').removeClass('d-none');
+        $('#login-button-icon').addClass('d-none');
+        $('#login-button-text').text('Connexion en cours…');
+    }
+
+    function masquerLoaderConnexion() {
+        $('#login-submit').prop('disabled', false);
+        $('#login-button-loader').addClass('d-none');
+        $('#login-button-icon').removeClass('d-none');
+        $('#login-button-text').text('Valider');
+    }
+
     // Étape 1 : interception du premier formulaire
     $('#connexion').on('submit', function(e) {
 
@@ -111,6 +129,8 @@
             Swal.fire('Champs requis', 'Veuillez remplir l’email et le mot de passe', 'warning');
             return;
         }
+
+        afficherLoaderConnexion();
 
         $.ajax({
             url: "{{ route('connexion') }}",
@@ -136,6 +156,7 @@
 
             },
             error: function(xhr) {
+                masquerLoaderConnexion();
                 // Validation failed
                 if(xhr.status === 422){
                     let errors = xhr.responseJSON.errors;

@@ -8,7 +8,6 @@ use Illuminate\Support\Facades\DB;
 
 class Transaction extends Model
 {
-
     protected $table = 'transactions';
 
     protected $fillable = [
@@ -27,15 +26,17 @@ class Transaction extends Model
     {
         return DB::table('services as s')
             ->join('prix as p', 'p.services_id', '=', 's.id')
-            ->leftJoin('transactions as t', function($join) use ($date, $prestataireId) {
+            ->leftJoin('transactions as t', function ($join) use ($date, $prestataireId) {
                 $join->on('t.prix_id', '=', 'p.id')
                     ->whereDate('t.created_at', $date)
-                    ->whereIn('t.operateurs_id', function($query) use ($prestataireId) {
+                    ->whereIn('t.operateurs_id', function ($query) use ($prestataireId) {
                         $query->select('o.id')
                             ->from('operateurs as o')
-                            ->join('operateursprestataires as op', function($q) {
-                                $q->on('op.operateurs_id', '=', 'o.id')
-                                    ->where('op.supprimer', 0);
+                            ->join('operateursprestataires as op', function ($join) {
+                                $join->on('op.operateurs_id', '=', 'o.id')
+                                    ->where('op.supprimer', 0)
+                                    ->where('op.statut', 0)
+                                    ->whereNull('op.dateFin');
                             })
                             ->where('op.prestataires_id', $prestataireId)
                             ->where('o.supprimer', 0);
@@ -52,19 +53,20 @@ class Transaction extends Model
             ->get();
     }
 
-
     public static function statistiquesParJour($mois, $annee, $idPrestataire)
     {
         return DB::table('transactions as t')
-            ->join('operateurs as o', function($join) {
+            ->join('operateurs as o', function ($join) {
                 $join->on('o.id', '=', 't.operateurs_id')
                     ->where('o.supprimer', 0);
             })
-            ->join('operateursprestataires as op', function($join) {
+            ->join('operateursprestataires as op', function ($join) {
                 $join->on('op.operateurs_id', '=', 'o.id')
-                    ->where('op.supprimer', 0);
+                    ->where('op.supprimer', 0)
+                    ->where('op.statut', 0)
+                    ->whereNull('op.dateFin');
             })
-            ->join('prestataires as pr', function($join) {
+            ->join('prestataires as pr', function ($join) {
                 $join->on('pr.id', '=', 'op.prestataires_id')
                     ->where('pr.supprimer', 0);
             })
@@ -75,11 +77,7 @@ class Transaction extends Model
                 DB::raw("SUM(CASE WHEN s.codeService = 'PD' THEN 1 ELSE 0 END) as petit_dejeuner"),
                 DB::raw("SUM(CASE WHEN s.codeService = 'D' THEN 1 ELSE 0 END) as dejeuner"),
                 DB::raw("SUM(CASE WHEN s.codeService = 'DR' THEN 1 ELSE 0 END) as diner"),
-                DB::raw('COUNT(t.id) as total'),
-                'o.nom',
-                'o.prenoms',
-                'pr.libelle as libellePrestataire',
-                'pr.codePrestataire'
+                DB::raw('COUNT(t.id) as total')
             )
             ->whereMonth('t.created_at', $mois)
             ->whereYear('t.created_at', $annee) // ✅ ajout de l'année
@@ -88,8 +86,6 @@ class Transaction extends Model
             ->orderBy(DB::raw('DATE(t.created_at)'), 'ASC')
             ->get();
     }
-
-
 
     /*public static function statistiquesParJour($mois)
     {
@@ -141,21 +137,24 @@ class Transaction extends Model
             ->where('cr.id', '=', $compteId)
             ->selectRaw('cr.capacite - COUNT(p.id) AS restant')
             ->value('restant');
+
         return $nombreFacturation == 0 ?? false;
     }
 
     public static function totalServicesParMois($mois, $idPrestataire)
     {
         return DB::table('transactions as t')
-            ->join('operateurs as o', function($join) {
+            ->join('operateurs as o', function ($join) {
                 $join->on('o.id', '=', 't.operateurs_id')
                     ->where('o.supprimer', 0);
             })
-            ->join('operateursprestataires as op', function($join) {
+            ->join('operateursprestataires as op', function ($join) {
                 $join->on('op.operateurs_id', '=', 'o.id')
-                    ->where('op.supprimer', 0);
+                    ->where('op.supprimer', 0)
+                    ->where('op.statut', 0)
+                    ->whereNull('op.dateFin');
             })
-            ->join('prestataires as pr', function($join) use ($idPrestataire) {
+            ->join('prestataires as pr', function ($join) use ($idPrestataire) {
                 $join->on('pr.id', '=', 'op.prestataires_id')
                     ->where('pr.supprimer', 0)
                     ->where('pr.id', $idPrestataire);
@@ -166,7 +165,7 @@ class Transaction extends Model
                 DB::raw("SUM(CASE WHEN s.codeService = 'PD' THEN 1 ELSE 0 END) AS petit_dejeuner"),
                 DB::raw("SUM(CASE WHEN s.codeService = 'D' THEN 1 ELSE 0 END) AS dejeuner"),
                 DB::raw("SUM(CASE WHEN s.codeService = 'DR' THEN 1 ELSE 0 END) AS diner"),
-                DB::raw("COUNT(t.id) AS total")
+                DB::raw('COUNT(t.id) AS total')
             )
             ->whereMonth('t.created_at', $mois)
             ->first(); // un seul résultat pour le mois
@@ -177,40 +176,42 @@ class Transaction extends Model
         $dateLimite = Carbon::now()->subDays(30)->startOfDay();
 
         $transactions = DB::table('etudiants as e')
-            ->join('comptesrestaux as cr', function($join) {
+            ->join('comptesrestaux as cr', function ($join) {
                 $join->on('cr.etudiants_id', '=', 'e.id')
                     ->where('cr.supprimer', 0);
             })
-            ->join('typescomptes as tc', function($join) {
+            ->join('typescomptes as tc', function ($join) {
                 $join->on('tc.id', '=', 'cr.typescomptes_id')
                     ->where('tc.supprimer', 0);
             })
-            ->join('facturations as f', function($join) {
+            ->join('facturations as f', function ($join) {
                 $join->on('f.compterestaux_id', '=', 'cr.id')
                     ->where('f.supprimer', 0);
             })
-            ->join('typesfacturations as tf', function($join) {
+            ->join('typesfacturations as tf', function ($join) {
                 $join->on('tf.id', '=', 'f.typesFacturations_id')
                     ->where('tf.supprimer', 0);
             })
             ->join('transactions as t', 't.comptesrestaux_id', '=', 'cr.id')
-            ->join('prix as p', function($join) {
+            ->join('prix as p', function ($join) {
                 $join->on('p.id', '=', 't.prix_id')
                     ->where('p.supprimer', 0);
             })
-            ->join('services as s', function($join) {
+            ->join('services as s', function ($join) {
                 $join->on('s.id', '=', 'p.services_id')
                     ->where('s.supprimer', 0);
             })
-            ->join('operateurs as o', function($join) {
+            ->join('operateurs as o', function ($join) {
                 $join->on('o.id', '=', 't.operateurs_id')
                     ->where('o.supprimer', 0);
             })
-            ->join('operateursprestataires as op', function($join) {
+            ->join('operateursprestataires as op', function ($join) {
                 $join->on('op.operateurs_id', '=', 'o.id')
-                    ->where('op.supprimer', 0);
+                    ->where('op.supprimer', 0)
+                    ->where('op.statut', 0)
+                    ->whereNull('op.dateFin');
             })
-            ->join('prestataires as pr', function($join) {
+            ->join('prestataires as pr', function ($join) {
                 $join->on('pr.id', '=', 'op.prestataires_id')
                     ->where('pr.supprimer', 0);
             })
@@ -254,15 +255,17 @@ class Transaction extends Model
     public static function dernieresTransactions($idCompteRestau)
     {
         return DB::table('transactions as t')
-            ->join('operateurs as o', function($join) {
+            ->join('operateurs as o', function ($join) {
                 $join->on('o.id', '=', 't.operateurs_id')
                     ->where('o.supprimer', 0);
             })
-            ->join('operateursprestataires as op', function($join) {
+            ->join('operateursprestataires as op', function ($join) {
                 $join->on('op.operateurs_id', '=', 'o.id')
-                    ->where('op.supprimer', 0);
+                    ->where('op.supprimer', 0)
+                    ->where('op.statut', 0)
+                    ->whereNull('op.dateFin');
             })
-            ->join('prestataires as pr', function($join) {
+            ->join('prestataires as pr', function ($join) {
                 $join->on('pr.id', '=', 'op.prestataires_id')
                     ->where('pr.supprimer', 0);
             })
@@ -286,8 +289,4 @@ class Transaction extends Model
             ->limit(30)
             ->get();
     }
-
-
-
-
 }
